@@ -1,4 +1,4 @@
-var _global: _Global = typeof window === 'undefined' ? global : window;
+var _global = typeof window === 'undefined' ? global : window;
 export {_global as global};
 
 export var Type = Function;
