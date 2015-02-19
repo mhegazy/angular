@@ -21,7 +21,7 @@ export class WebDriverExtension {
     throw new BaseException('NYI');
   }
 
-  timeEnd(name, restart:boolean):Promise<any> {
+  timeEnd(name, restartName: string = null):Promise<any> {
     throw new BaseException('NYI');
   }
 
