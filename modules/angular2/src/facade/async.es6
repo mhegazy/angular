@@ -20,8 +20,8 @@ export class PromiseWrapper {
     return Promise.all(promises);
   }
 
-  //static then<TResult>(promise: Promise<TResult>, success: (value: any) => TResult | Promise<TResult>, rejection: (reason: any) => TResult | Promise<TResult>): Promise<TResult> {
-  static then(promise: Promise<any>, success: Function, rejection: Function): Promise<any> {
+  static then<TResult>(promise: Promise<TResult>, success: (value: any) => TResult | Promise<TResult>, rejection: (reason: any) => TResult | Promise<TResult>): Promise<TResult> {
+  //static then(promise: Promise<any>, success: Function, rejection: Function): Promise<any> {
     return promise.then(success, rejection);
   }
 
