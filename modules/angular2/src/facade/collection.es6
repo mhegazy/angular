@@ -115,7 +115,7 @@ export class ListWrapper {
     }
     return null;
   }
-  static reduce(list:List<any>, fn:Function, init) {
+  static reduce(list: List<any>, fn: { (previousValue: any, currentValue: any, currentIndex: number, array: List<any>) : any; }, init) {
     return list.reduce(fn, init);
   }
   static filter(array, pred:Function) {
