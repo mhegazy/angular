@@ -6,11 +6,14 @@ export var Node = window.Node;
 export var NodeList = window.NodeList;
 export var Text = window.Text;
 export var Element = window.HTMLElement;
+export interface Element extends HTMLElement { }
 export var TemplateElement = window.HTMLTemplateElement;
 export var StyleElement = window.HTMLStyleElement;
 export var document = window.document;
 export var location = window.location;
 export var gc = window.gc ? () => window.gc() : () => null;
+
+
 
 export class DOM {
   static query(selector) {
@@ -111,12 +114,12 @@ export class DOM {
     return el;
   }
   static createStyleElement(css:string, doc=document):StyleElement {
-    var style = doc.createElement('STYLE');
+    var style:any = doc.createElement('STYLE');
     style.innerText = css;
     return style;
   }
-  static clone(node:Node) {
-    return node.cloneNode(true);
+  static clone<T extends Node>(node:T): T {
+    return <T>node.cloneNode(true);
   }
   static hasProperty(element:Element, name:string) {
     return name in element;
