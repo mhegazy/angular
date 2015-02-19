@@ -279,7 +279,7 @@ export class ProtoElementInjector  {
   }
 
   hasEventEmitter(eventName: string) {
-    var p:any = this;
+    var p: any = this;
     if (isPresent(p._binding0) && DirectiveBinding._hasEventEmitter(eventName, p._binding0)) return true;
     if (isPresent(p._binding1) && DirectiveBinding._hasEventEmitter(eventName, p._binding1)) return true;
     if (isPresent(p._binding2) && DirectiveBinding._hasEventEmitter(eventName, p._binding2)) return true;
@@ -435,7 +435,7 @@ export class ElementInjector extends TreeNode {
   }
 
   directParent(): ElementInjector {
-    return this._proto.distanceToParent < 2 ? this.parent : null;
+    return this._proto.distanceToParent < 2 ? <ElementInjector> this.parent : null;
   }
 
   _isComponentKey(key:Key) {
@@ -520,7 +520,7 @@ export class ElementInjector extends TreeNode {
 
     if (! this._shouldIncludeSelf(depth)) {
       depth -= ei._proto.distanceToParent;
-      ei = ei._parent;
+      ei = <ElementInjector> ei._parent;
     }
 
     while (ei != null && depth >= 0) {
@@ -531,7 +531,7 @@ export class ElementInjector extends TreeNode {
       if (dir !== _undefined) return dir;
 
       depth -= ei._proto.distanceToParent;
-      ei = ei._parent;
+      ei = <ElementInjector>ei._parent;
     }
 
     if (isPresent(this._host) && this._host._isComponentKey(key)) {

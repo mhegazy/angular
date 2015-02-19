@@ -17,6 +17,7 @@ import {LightDom, DestinationLightDom} from './shadow_dom_emulation/light_dom';
 import {ShadowDomStrategy} from './shadow_dom_strategy';
 import {ViewPool} from './view_pool';
 import {EventManager} from 'angular2/src/core/events/event_manager';
+import {Component} from 'angular2/src/core/annotations/annotations'
 
 const NG_BINDING_CLASS = 'ng-binding';
 const NG_BINDING_CLASS_SELECTOR = '.ng-binding';
@@ -143,7 +144,7 @@ export class View {
 
       // shadowDomAppInjector
       if (isPresent(componentDirective)) {
-        var services = componentDirective.annotation.componentServices;
+		  var services = (<Component>componentDirective.annotation).componentServices;
         if (isPresent(services))
           shadowDomAppInjector = appInjector.createChild(services);
         else {
@@ -312,7 +313,7 @@ export class ProtoView {
     var rootElementClone = this.instantiateInPlace ? this.element : DOM.clone(this.element);
     var elementsWithBindingsDynamic;
     if (this.isTemplateElement) {
-      elementsWithBindingsDynamic = DOM.querySelectorAll(rootElementClone.content, NG_BINDING_CLASS_SELECTOR);
+      elementsWithBindingsDynamic = DOM.querySelectorAll((<TemplateElement>rootElementClone).content, NG_BINDING_CLASS_SELECTOR);
     } else {
       elementsWithBindingsDynamic= DOM.getElementsByClassName(rootElementClone, NG_BINDING_CLASS);
     }
@@ -324,7 +325,7 @@ export class ProtoView {
 
     var viewNodes;
     if (this.isTemplateElement) {
-      var childNode = DOM.firstChild(rootElementClone.content);
+      var childNode = DOM.firstChild((<TemplateElement>rootElementClone).content);
       viewNodes = []; // TODO(perf): Should be fixed size, since we could pre-compute in in ProtoView
       // Note: An explicit loop is the fastest way to convert a DOM array into a JS array!
       while(childNode != null) {

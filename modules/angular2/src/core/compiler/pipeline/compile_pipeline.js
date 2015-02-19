@@ -32,7 +32,7 @@ export class CompilePipeline {
         // next sibling before recursing.
         var nextNode = DOM.nextSibling(node);
         if (node.nodeType === Node.ELEMENT_NODE) {
-          this._process(results, current, new CompileElement(node));
+          this._process(results, current, new CompileElement(<HTMLElement>node));
         }
         node = nextNode;
       }
