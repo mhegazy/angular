@@ -8,6 +8,8 @@ import { WebDriverExtension } from '../web_driver_extension';
 import { WebDriverAdapter } from '../web_driver_adapter';
 import { Promise } from 'angular2/src/facade/async';
 
+import {Binding} from 'angular2/di';
+export {Binding} from 'angular2/di';
 
 var BEGIN_MARK_RE = RegExpWrapper.create('begin_(.*)');
 var END_MARK_RE = RegExpWrapper.create('end_(.*)');

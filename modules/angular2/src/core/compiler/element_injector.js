@@ -43,7 +43,7 @@ class StaticKeys {
   }
 }
 
-class TreeNode {
+export class TreeNode {
   _parent:TreeNode;
   _head:TreeNode;
   _tail:TreeNode;
@@ -279,7 +279,7 @@ export class ProtoElementInjector  {
   }
 
   hasEventEmitter(eventName: string) {
-    var p = this;
+    var p:any = this;
     if (isPresent(p._binding0) && DirectiveBinding._hasEventEmitter(eventName, p._binding0)) return true;
     if (isPresent(p._binding1) && DirectiveBinding._hasEventEmitter(eventName, p._binding1)) return true;
     if (isPresent(p._binding2) && DirectiveBinding._hasEventEmitter(eventName, p._binding2)) return true;

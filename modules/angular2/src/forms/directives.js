@@ -4,7 +4,7 @@ import {isBlank, isPresent, CONST} from 'angular2/src/facade/lang';
 import {StringMapWrapper, ListWrapper} from 'angular2/src/facade/collection';
 import {ControlGroup, Control} from './model';
 
-class ControlGroupDirectiveBase {
+export class ControlGroupDirectiveBase {
   addDirective(directive):void {}
   findControl(name:string):Control { return null; }
 }

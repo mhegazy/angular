@@ -6,6 +6,9 @@ import { bind, OpaqueToken } from 'angular2/di';
 import { WebDriverExtension } from '../web_driver_extension';
 import { Metric } from '../metric';
 
+import {Binding} from 'angular2/di';
+export {Binding} from 'angular2/di';
+
 /**
  * A metric that reads out the performance log
  */

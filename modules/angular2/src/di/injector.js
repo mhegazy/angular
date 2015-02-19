@@ -121,7 +121,7 @@ export class Injector {
 }
 
 
-class _SyncInjectorStrategy {
+export class _SyncInjectorStrategy {
   injector:Injector;
   constructor(injector:Injector) {
     this.injector = injector;
@@ -169,7 +169,7 @@ class _SyncInjectorStrategy {
 }
 
 
-class _AsyncInjectorStrategy {
+export class _AsyncInjectorStrategy {
   injector:Injector;
   constructor(injector:Injector) {
     this.injector = injector;

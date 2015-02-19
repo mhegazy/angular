@@ -3,6 +3,9 @@ import { bind, OpaqueToken } from 'angular2/di';
 
 import { Validator } from '../validator';
 
+import {Binding} from 'angular2/di';
+export {Binding} from 'angular2/di';
+
 /**
  * A validator that waits for the sample to have a certain size.
  */

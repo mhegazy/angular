@@ -5,6 +5,8 @@ import { Validator } from './validator';
 import { Metric } from './metric';
 import { Options } from './sample_options';
 
+import {Binding} from 'angular2/di';
+export {Binding} from 'angular2/di';
 /**
  * SampleDescription merges all available descriptions about a sample
  */

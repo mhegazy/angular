@@ -11,6 +11,8 @@ import { WebDriverAdapter } from './web_driver_adapter';
 
 import { Options } from './sample_options';
 
+import {Binding} from 'angular2/di';
+export {Binding} from 'angular2/di';
 /**
  * The Sampler owns the sample loop:
  * 1. calls the prepare/execute callbacks,

@@ -156,7 +156,7 @@ export class JitProtoChangeDetector extends ProtoChangeDetector {
   }
 }
 
-class ProtoRecordBuilder {
+export class ProtoRecordBuilder {
   records:List<ProtoRecord>;
 
   constructor() {

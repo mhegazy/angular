@@ -11,7 +11,7 @@ export class SourceLightDom {}
 export class DestinationLightDom {}
 
 
-class _Root {
+export class _Root {
   node:Node;
   injector:ElementInjector;
 

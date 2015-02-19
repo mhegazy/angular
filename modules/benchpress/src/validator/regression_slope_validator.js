@@ -4,6 +4,9 @@ import { bind, OpaqueToken } from 'angular2/di';
 import { Validator } from '../validator';
 import { Statistic } from '../statistic';
 
+import {Binding} from 'angular2/di';
+export {Binding} from 'angular2/di';
+
 /**
  * A validator that checks the regression slope of a specific metric.
  * Waits for the regression slope to be >=0.

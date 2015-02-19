@@ -8,6 +8,7 @@ import {ListWrapper} from 'angular2/src/facade/collection';
 import {ScrollAreaComponent} from './scroll_area';
 import {If, Foreach} from 'angular2/directives';
 import {DOM, document, Element} from 'angular2/src/facade/dom';
+export {Element} from 'angular2/src/facade/dom';
 
 export class App {
   scrollAreas:List<int>;

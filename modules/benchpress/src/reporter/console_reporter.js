@@ -8,6 +8,8 @@ import { Statistic } from '../statistic';
 import { Reporter } from '../reporter';
 import { SampleDescription } from '../sample_description';
 
+import {Binding} from 'angular2/di';
+export {Binding} from 'angular2/di';
 /**
  * A reporter for the console
  */

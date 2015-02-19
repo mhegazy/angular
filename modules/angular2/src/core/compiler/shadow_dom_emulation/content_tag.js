@@ -8,7 +8,7 @@ import {NgElement} from 'angular2/src/core/dom/element';
 
 var _scriptTemplate = DOM.createScriptTag('type', 'ng/content')
 
-class ContentStrategy {
+export class ContentStrategy {
   nodes: List<Node>;
   insert(nodes:List<Node>){}
 }

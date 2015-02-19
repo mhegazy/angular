@@ -77,7 +77,7 @@ export class XHRMock extends XHR {
   }
 }
 
-class _PendingRequest {
+export class _PendingRequest {
   url: string;
   completer;
 
@@ -99,7 +99,7 @@ class _PendingRequest {
   }
 }
 
-class _Expectation {
+export class _Expectation {
   url: string;
   response: string;
   constructor(url: string, response: string) {
