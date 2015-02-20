@@ -9,7 +9,7 @@ export class TemplateAnnotation {
   source:any;//List<Template>;
   locale:any; //string
   device:any; //string
-  @CONST()
+  //@CONST()
   constructor({
       url,
       inline,

@@ -12,7 +12,7 @@ import {CONST} from "angular2/src/facade/lang";
  */
 export class Inject {
   token;
-  @CONST()
+  //@CONST()
   constructor(token) {
     this.token = token;
   }
@@ -32,7 +32,7 @@ export class Inject {
  */
 export class InjectPromise {
   token;
-  @CONST()
+  //@CONST()
   constructor(token) {
     this.token = token;
   }
@@ -52,7 +52,7 @@ export class InjectPromise {
  */
 export class InjectLazy {
   token;
-  @CONST()
+  //@CONST()
   constructor(token) {
     this.token = token;
   }
@@ -86,7 +86,7 @@ export class InjectLazy {
  *
  */
 export class DependencyAnnotation {
-  @CONST()
+  //@CONST()
   constructor() {
   }
 }

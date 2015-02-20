@@ -8,7 +8,7 @@ export class DirectiveAnnotation {
   lightDomServices:any; //List;
   implementsTypes:any; //List;
   lifecycle:any; //List
-  @CONST()
+  //@CONST()
   constructor({
       selector,
       bind,
@@ -47,7 +47,7 @@ export class ComponentAnnotation extends DirectiveAnnotation {
   componentServices:any; //List;
   lifecycle:any; //List
 
-@CONST()
+//@CONST()
   constructor({
     selector,
     bind,
@@ -88,7 +88,7 @@ export function Component(arg = undefined) {
 
 export class DecoratorAnnotation extends DirectiveAnnotation {
   compileChildren: boolean;
-  @CONST()
+  //@CONST()
   constructor({
       selector,
       bind,
@@ -122,7 +122,7 @@ export function Decorator(arg = undefined) {
 }
 
 export class ViewportAnnotation extends DirectiveAnnotation {
-  @CONST()
+  //@CONST()
   constructor({
       selector,
       bind,

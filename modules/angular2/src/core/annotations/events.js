@@ -7,7 +7,7 @@ import {DependencyAnnotation} from 'angular2/di';
  */
 export class EventEmitter extends DependencyAnnotation {
   eventName: string;
-  @CONST()
+  //@CONST()
   constructor(eventName) {
     super();
     this.eventName = eventName;

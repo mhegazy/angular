@@ -6,7 +6,7 @@ import {CONST} from 'angular2/src/facade/lang';
 class Annotation {
   value;
 
-  @CONST()
+  //@CONST()
   constructor(value) {
     this.value = value;
   }

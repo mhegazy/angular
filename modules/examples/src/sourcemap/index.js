@@ -1,8 +1,6 @@
 import { BaseException, print, CONST } from 'angular2/src/facade/lang';
 
-class TestAnnotation {
-  @CONST()
-  constructor() {}
+function TestAnnotation (){
 }
 
 // Use a class with an annotation,
