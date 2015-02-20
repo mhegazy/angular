@@ -291,7 +291,7 @@ export class ProtoView {
     this.instantiateInPlace = false;
     this.rootBindingOffset = (isPresent(this.element) && DOM.hasClass(this.element, NG_BINDING_CLASS))
       ? 1 : 0;
-    this.isTemplateElement = this.element instanceof TemplateElement;
+    this.isTemplateElement = this.element instanceof <any>TemplateElement;
     this.shadowDomStrategy = shadowDomStrategy;
     this._viewPool = new ViewPool(VIEW_POOL_CAPACITY);
   }

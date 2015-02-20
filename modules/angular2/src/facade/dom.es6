@@ -173,7 +173,7 @@ export class DOM {
     return element.removeAttribute(attribute);
   }
   static templateAwareRoot(el:Element):Node {
-    return el instanceof TemplateElement ? (<TemplateElement>el).content : el;
+    return el instanceof <any>TemplateElement ? (<TemplateElement>el).content : el;
   }
   static createHtmlDocument() {
     return document.implementation.createHTMLDocument();
@@ -182,6 +182,6 @@ export class DOM {
     return document;
   }
   static elementMatches(n, selector:string):boolean {
-    return n instanceof Element && n.matches(selector);
+    return n instanceof <any>Element && n.matches(selector);
   }
 }

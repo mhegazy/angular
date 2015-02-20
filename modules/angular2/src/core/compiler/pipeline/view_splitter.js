@@ -45,7 +45,7 @@ export class ViewSplitter extends CompileStep {
     if (isBlank(parent)) {
       current.isViewRoot = true;
     } else {
-      if (current.element instanceof TemplateElement) {
+      if (current.element instanceof <any>TemplateElement) {
         if (!current.isViewRoot) {
           var viewRoot = new CompileElement(DOM.createTemplate(''));
           var currentElement:TemplateElement = <TemplateElement>current.element;

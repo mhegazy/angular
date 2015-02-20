@@ -67,7 +67,7 @@ export class DirectiveParser extends CompileStep {
     }
     // Note: We assume that the ViewSplitter already did its work, i.e. template directive should
     // only be present on <template> elements any more!
-    var isTemplateElement = current.element instanceof TemplateElement;
+    var isTemplateElement = current.element instanceof <any>TemplateElement;
     this._selectorMatcher.match(cssSelector, (directive) => {
       if (directive.annotation instanceof ViewportAnnotation) {
         if (!isTemplateElement) {
