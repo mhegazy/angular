@@ -1,6 +1,6 @@
 import {isBlank} from 'angular2/src/facade/lang';
 
-export function arrayChangesAsString({collection, previous, additions, moves, removals}) {
+export function arrayChangesAsString( {collection = undefined, previous = undefined, additions = undefined, moves = undefined, removals = undefined}) {
   if (isBlank(collection)) collection = [];
   if (isBlank(previous)) previous = [];
   if (isBlank(additions)) additions = [];
@@ -14,7 +14,7 @@ export function arrayChangesAsString({collection, previous, additions, moves, re
          "removals: " + removals.join(', ') + "\n";
 }
 
-export function kvChangesAsString({map, previous, additions, changes, removals}) {
+export function kvChangesAsString( {map=[], previous=[], additions=[], changes=[], removals=[]}) {
   if (isBlank(map)) map = [];
   if (isBlank(previous)) previous = [];
   if (isBlank(additions)) additions = [];

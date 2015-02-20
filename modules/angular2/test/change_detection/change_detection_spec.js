@@ -181,7 +181,7 @@ export function main() {
           });
 
           it("should support formatters", () => {
-            var formatters = MapWrapper.createFromPairs([
+			  var formatters = MapWrapper.createFromPairs<string, (v: string, before?: string, after?: string) => string>([
               ['uppercase', (v) => v.toUpperCase()],
               ['wrap', (v, before, after) => `${before}${v}${after}`]]);
             expect(executeWatch('str', '"aBc" | uppercase', null, formatters)).toEqual(['str=ABC']);

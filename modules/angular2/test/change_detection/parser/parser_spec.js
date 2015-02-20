@@ -5,7 +5,7 @@ import {MapWrapper, ListWrapper} from 'angular2/src/facade/collection';
 import {Parser} from 'angular2/src/change_detection/parser/parser';
 import {Lexer} from 'angular2/src/change_detection/parser/lexer';
 import {ContextWithVariableBindings} from 'angular2/src/change_detection/parser/context_with_variable_bindings';
-import {Formatter, LiteralPrimitive} from 'angular2/src/change_detection/parser/ast';
+import {Formatter, LiteralPrimitive, Interpolation} from 'angular2/src/change_detection/parser/ast';
 
 class TestData {
   a;
@@ -365,13 +365,13 @@ export function main() {
     describe("parseBinding", () => {
       describe("formatters", () => {
         it("should parse formatters", () => {
-          var exp = parseBinding("'Foo'|uppercase").ast;
+          var exp:any = parseBinding("'Foo'|uppercase").ast;
           expect(exp).toBeAnInstanceOf(Formatter);
           expect(exp.name).toEqual("uppercase");
         });
 
         it("should parse formatters with args", () => {
-          var exp = parseBinding("1|increment:2").ast;
+          var exp:any = parseBinding("1|increment:2").ast;
           expect(exp).toBeAnInstanceOf(Formatter);
           expect(exp.name).toEqual("increment");
           expect(exp.args[0]).toBeAnInstanceOf(LiteralPrimitive);
@@ -529,14 +529,14 @@ export function main() {
       });
 
       it('should parse no prefix/suffix interpolation', () => {
-        var ast = parseInterpolation('{{a}}').ast;
+        var ast = <Interpolation>parseInterpolation('{{a}}').ast;
         expect(ast.strings).toEqual(['', '']);
         expect(ast.expressions.length).toEqual(1);
         expect(ast.expressions[0].name).toEqual('a');
       });
 
       it('should parse prefix/suffix with multiple interpolation', () => {
-        var ast = parseInterpolation('before{{a}}middle{{b}}after').ast;
+		var ast = <Interpolation>parseInterpolation('before{{a}}middle{{b}}after').ast;
         expect(ast.strings).toEqual(['before', 'middle', 'after']);
         expect(ast.expressions.length).toEqual(2);
         expect(ast.expressions[0].name).toEqual('a');

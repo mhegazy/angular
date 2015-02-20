@@ -153,7 +153,7 @@ export function main() {
             }
           }, resolver);
 
-          PromiseWrapper.then(compiler.compile(ParentComponent),
+          PromiseWrapper.then<any>(compiler.compile(ParentComponent),
             function(protoView) {
               var nestedView = protoView.elementBinders[0].nestedProtoView;
               expect(error).toBeNull();
@@ -259,7 +259,7 @@ class FakeTemplateLoader extends TemplateLoader {
     super(null);
   }
 
-  load(template: TemplateAnnotation) {
+  load(template: TemplateAnnotation): HTMLTemplateElement | Promise<HTMLTemplateElement> {
     if (isPresent(template.inline)) {
       return DOM.createTemplate(template.inline);
     }

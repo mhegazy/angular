@@ -55,7 +55,7 @@ export function main() {
       compileWithTemplate(template).then((pv) => {
         createView(pv);
         cd.detectChanges();
-        var span = DOM.querySelector(view.nodes[0], '#child');
+        var span = <HTMLSpanElement>DOM.querySelector(view.nodes[0], '#child');
         expect(DOM.hasClass(span, 'compiled')).toBeFalsy();
         done();
       });
@@ -66,7 +66,7 @@ export function main() {
       compileWithTemplate(template).then((pv) => {
         createView(pv);
         cd.detectChanges();
-        var span = DOM.querySelector(view.nodes[0], '#child');
+        var span = <HTMLSpanElement>DOM.querySelector(view.nodes[0], '#child');
         expect(DOM.hasClass(span, 'compiled')).toBeTruthy();
         done();
       });

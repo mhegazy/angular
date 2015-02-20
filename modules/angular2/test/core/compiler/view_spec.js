@@ -130,7 +130,7 @@ export function main() {
           var view = pv.instantiate(null, null);
           view.hydrate(null, null, null);
           expect(view.nodes.length).toBe(1);
-          expect(view.nodes[0].getAttribute('id')).toEqual('1');
+          expect((<HTMLDivElement>view.nodes[0]).getAttribute('id')).toEqual('1');
         });
 
         describe('collect elements with property bindings', () => {

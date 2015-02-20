@@ -173,7 +173,7 @@ export class DOM {
     return element.removeAttribute(attribute);
   }
   static templateAwareRoot(el:Element):Node {
-    return el instanceof TemplateElement ? el.content : el;
+    return el instanceof TemplateElement ? (<TemplateElement>el).content : el;
   }
   static createHtmlDocument() {
     return document.implementation.createHTMLDocument();

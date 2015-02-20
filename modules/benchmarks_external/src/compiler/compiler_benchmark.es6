@@ -7,7 +7,7 @@ export function main() {
 }
 
 function loadTemplate(templateId, repeatCount) {
-  var template = document.querySelectorAll(`#${templateId}`)[0];
+  var template = <TemplateElement>document.querySelectorAll(`#${templateId}`)[0];
   var content = template.innerHTML;
   var result = '';
   for (var i=0; i<repeatCount; i++) {

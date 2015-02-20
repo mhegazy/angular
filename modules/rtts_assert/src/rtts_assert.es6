@@ -195,7 +195,7 @@ function formatErrors(errors, indent = '  ') {
 
 
 // assert a type of given value and throw if does not pass
-function type(actual, T) {
+var type: any = function type(actual, T) {
   var errors = [];
   // currentStack = [];
 
@@ -299,7 +299,7 @@ function define(classOrName, check) {
 
 
 
-function assert(value) {
+var assert : any = function assert(value) {
   return {
     is: function is(...types) {
       // var errors = []

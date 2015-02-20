@@ -61,7 +61,7 @@ export function main() {
               </div>`;
 
       compile(MyComp, t, ctx, (view) => {
-        var input = queryView(view, "input")
+        var input = <HTMLInputElement> queryView(view, "input")
         expect(input.value).toEqual("loginValue");
         done();
       });
@@ -78,7 +78,7 @@ export function main() {
               </div>`;
 
       compile(MyComp, t, ctx, (view) => {
-        var input = queryView(view, "input")
+        var input = <HTMLInputElement> queryView(view, "input")
 
         input.value = "updatedValue";
         dispatchEvent(input, "change");
@@ -104,7 +104,7 @@ export function main() {
         });
         detectChanges(view);
 
-        var input = queryView(view, "input")
+        var input = <HTMLInputElement> queryView(view, "input")
         expect(input.value).toEqual("newValue");
         done();
       });
@@ -121,7 +121,7 @@ export function main() {
               </div>`;
 
       compile(MyComp, t, ctx, (view) => {
-        var input = queryView(view, "input")
+        var input = <HTMLInputElement> queryView(view, "input")
         expect(input.value).toEqual("one");
 
         ctx.name = "two";
@@ -141,7 +141,7 @@ export function main() {
                 </div>`;
 
         compile(MyComp, t, ctx, (view) => {
-          var input = queryView(view, "input")
+          var input = <HTMLInputElement> queryView(view, "input")
           expect(input.checked).toBe(true);
 
           input.checked = false;
@@ -160,7 +160,7 @@ export function main() {
                 </div>`;
 
         compile(MyComp, t, ctx, (view) => {
-          var input = queryView(view, "input")
+          var input = <HTMLInputElement> queryView(view, "input")
           expect(input.value).toEqual("!aa!");
 
           input.value = "!bb!";
@@ -180,10 +180,10 @@ export function main() {
                 </div>`;
 
         compile(MyComp, t, new MyComp(), (view) => {
-          var loginInput = queryView(view, "#login")
+          var loginInput = <HTMLInputElement> queryView(view, "#login")
           expect(loginInput.value).toEqual("loginValue");
 
-          var passInput = queryView(view, "#password")
+          var passInput = <HTMLInputElement> queryView(view, "#password")
           expect(passInput.value).toEqual("passValue");
 
           done();
@@ -196,7 +196,7 @@ export function main() {
                 </div>`;
 
         compile(MyComp, t, new MyComp(), (view) => {
-          var input = queryView(view, "input")
+          var input = <HTMLInputElement> queryView(view, "input")
 
           input.value = "updatedValue";
           dispatchEvent(input, "change");

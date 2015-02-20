@@ -17,7 +17,7 @@ import {LightDom, DestinationLightDom} from './shadow_dom_emulation/light_dom';
 import {ShadowDomStrategy} from './shadow_dom_strategy';
 import {ViewPool} from './view_pool';
 import {EventManager} from 'angular2/src/core/events/event_manager';
-import {Component} from 'angular2/src/core/annotations/annotations'
+import {Component, ComponentAnnotation} from 'angular2/src/core/annotations/annotations'
 
 const NG_BINDING_CLASS = 'ng-binding';
 const NG_BINDING_CLASS_SELECTOR = '.ng-binding';
@@ -144,7 +144,7 @@ export class View {
 
       // shadowDomAppInjector
       if (isPresent(componentDirective)) {
-		  var services = (<Component>componentDirective.annotation).componentServices;
+		  var services = (<ComponentAnnotation>componentDirective.annotation).componentServices;
         if (isPresent(services))
           shadowDomAppInjector = appInjector.createChild(services);
         else {

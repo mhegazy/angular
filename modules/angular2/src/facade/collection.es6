@@ -14,7 +14,7 @@ export class MapWrapper {
     }
     return result;
   }
-  static createFromPairs(pairs:List<any>):Map<any,any> {return new Map(pairs);}
+  static createFromPairs<K,V>(pairs:Array<[K,V]>):Map<K,V> {return new Map(pairs);}
   static get(m, k) { return m.get(k); }
   static set(m, k, v) { m.set(k,v); }
   static contains(m, k) { return  m.has(k); }

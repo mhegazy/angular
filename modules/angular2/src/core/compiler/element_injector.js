@@ -132,12 +132,12 @@ export class DirectiveBinding extends Binding {
     //this.onCheck = isPresent(annotation) && annotation.hasLifecycleHook(onCheck);
   }
 
-  static createFromBinding(b:Binding, annotation:DirectiveAnnotation):Binding {
+  static createFromBinding(b: Binding, annotation: DirectiveAnnotation): DirectiveBinding {
     var deps = ListWrapper.map(b.dependencies, DirectiveDependency.createFrom);
     return new DirectiveBinding(b.key, b.factory, deps, b.providedAsPromise, annotation);
   }
 
-  static createFromType(type:Type, annotation:DirectiveAnnotation):Binding {
+  static createFromType(type: Type, annotation: DirectiveAnnotation): DirectiveBinding {
     var binding = bind(type).toClass(type);
     return DirectiveBinding.createFromBinding(binding, annotation);
   }

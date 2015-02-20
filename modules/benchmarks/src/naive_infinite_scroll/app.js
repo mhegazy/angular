@@ -71,7 +71,7 @@ export class App {
   }
 
   _locateFinishedMarker():Element {
-    return DOM.querySelector(document.body, '#done');
+    return <Element>DOM.querySelector(document.body, '#done');
   }
 
   _getScrollDiv() {

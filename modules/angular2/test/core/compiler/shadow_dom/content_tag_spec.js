@@ -15,7 +15,7 @@ export function main() {
   describe('Content', function() {
     it("should insert the nodes", () => {
       var parent = el("<div><content></content></div>");
-      var content = DOM.firstChild(parent);
+      var content = <HTMLDivElement>DOM.firstChild(parent);
 
       var c = new Content(null, new NgElement(content));
       c.insert([el("<a></a>"), el("<b></b>")])
@@ -25,7 +25,7 @@ export function main() {
 
     it("should remove the nodes from the previous insertion", () => {
       var parent = el("<div><content></content></div>");
-      var content = DOM.firstChild(parent);
+      var content = <HTMLDivElement>DOM.firstChild(parent);
 
       var c = new Content(null, new NgElement(content));
       c.insert([el("<a></a>")]);
@@ -36,7 +36,7 @@ export function main() {
 
     it("should insert empty list", () => {
       var parent = el("<div><content></content></div>");
-      var content = DOM.firstChild(parent);
+      var content = <HTMLDivElement>DOM.firstChild(parent);
 
       var c = new Content(null, new NgElement(content));
       c.insert([el("<a></a>")]);

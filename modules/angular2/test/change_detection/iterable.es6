@@ -1,4 +1,5 @@
 export class TestIterable {
+  list: any[];
   constructor() {
     this.list = [];
   }

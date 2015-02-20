@@ -82,6 +82,6 @@ export class ProtoElementInjectorBuilder extends CompileStep {
   }
 
   _createBinding(d:DirectiveMetadata): DirectiveBinding {
-    return DirectiveBinding.createFromType(d.type, d.annotation);
+	  return DirectiveBinding.createFromType(d.type, d.annotation);
   }
 }

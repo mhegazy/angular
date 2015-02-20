@@ -4,7 +4,10 @@ export {_global as global};
 export var Type = Function;
 export var Math = _global.Math;
 
-export type RegExp = { multiple: _globalRegExp; single: _globalRegExp };
+export interface RegExp {
+  multiple: _globalRegExp;
+  single: _globalRegExp
+};
 
 var assertionsEnabled_ = typeof assert !== 'undefined';
 
