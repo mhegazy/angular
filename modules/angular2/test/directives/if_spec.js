@@ -14,7 +14,7 @@ import {TemplateLoader} from 'angular2/src/core/compiler/template_loader';
 import {TemplateResolver} from 'angular2/src/core/compiler/template_resolver';
 
 import {Component} from 'angular2/src/core/annotations/annotations';
-import {TemplateAnnotation} from 'angular2/src/core/annotations/template';
+import {Template} from 'angular2/src/core/annotations/template';
 
 import {If} from 'angular2/src/directives/if';
 
@@ -37,7 +37,7 @@ export function main() {
     }
 
     function compileWithTemplate(html) {
-      var template = new TemplateAnnotation({
+      var template = new Template({
         inline: html,
         directives: [If]
       });
@@ -228,11 +228,11 @@ class FakeTemplateResolver extends TemplateResolver {
     this._cmpTemplates = MapWrapper.create();
   }
 
-  setTemplate(component: Type, template: TemplateAnnotation) {
+  setTemplate(component: Type, template: Template) {
     MapWrapper.set(this._cmpTemplates, component, template);
   }
 
-  resolve(component: Type): TemplateAnnotation {
+  resolve(component: Type): Template {
     var override = MapWrapper.get(this._cmpTemplates, component);
 
     if (isPresent(override)) {

@@ -1,6 +1,6 @@
 import {int} from 'angular2/src/facade/lang';
 import {reflector} from 'angular2/src/reflection/reflection';
-import {ComponentAnnotation, Viewport, TemplateAnnotation, ViewContainer, Compiler}
+import {Component, Viewport, Template, ViewContainer, Compiler}
     from 'angular2/angular2';
 import {PromiseWrapper} from 'angular2/src/facade/async';
 import {ListWrapper, MapWrapper} from 'angular2/src/facade/collection';
@@ -49,13 +49,13 @@ export function setupReflectorForScrollItem() {
     'factory': () => new ScrollItemComponent(),
     'parameters': [],
     'annotations': [
-      new ComponentAnnotation({
+      new Component({
         selector: 'scroll-item',
         bind: {
           'offering': 'offering'
         }
       }),
-      new TemplateAnnotation({
+      new Template({
         directives: [
           CompanyNameComponent,
           OpportunityNameComponent,

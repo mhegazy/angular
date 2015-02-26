@@ -28,29 +28,9 @@ export class FIELD {
   }
 }
 
-export class ConstAnnotation { }
-export class AbstractAnnotation { }
-export class ImplementsAnnotation {
-    constructor(ty: any) {
-    }
-}
-
-export function addAnnotation(c, ann) {
-    (c.annotations || (c.annotations = [])).push(ann);
-    return c;
-}
-
-export function CONST() {
-    return function (c) { return addAnnotation(c, new ConstAnnotation()) };
-}
-
-export function ABSTRACT() {
-    return function (c) { return addAnnotation(c, new AbstractAnnotation()) };
-}
-
-export function IMPLEMENTS(ty) {
-    return function (c) { return addAnnotation(c, new ImplementsAnnotation(ty)) };
-}
+export class CONST {}
+export class ABSTRACT {}
+export class IMPLEMENTS {}
 
 export function isPresent(obj):boolean {
   return obj !== undefined && obj !== null;

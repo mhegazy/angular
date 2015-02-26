@@ -1,7 +1,7 @@
 import {int} from 'angular2/src/facade/lang';
 import {reflector} from 'angular2/src/reflection/reflection';
 import {getIntParameter, bindAction} from 'angular2/src/test_lib/benchmark_util';
-import {bootstrap, ComponentAnnotation, ViewportAnnotation, TemplateAnnotation, ViewContainer, Compiler}
+import {bootstrap, Component, Viewport, Template, ViewContainer, Compiler}
     from 'angular2/angular2';
 import {PromiseWrapper} from 'angular2/src/facade/async';
 import {ListWrapper, MapWrapper} from 'angular2/src/facade/collection';
@@ -101,14 +101,14 @@ export function setupReflectorForCells() {
     'factory': () => new CompanyNameComponent(),
     'parameters': [],
     'annotations': [
-      new ComponentAnnotation({
+      new Component({
         selector: 'company-name',
         bind: {
           'cell-width': 'width',
           'company': 'company'
         }
       }),
-      new TemplateAnnotation({
+      new Template({
           directives: [],
           inline: `<div [style]="style">{{company.name}}</div>`
       })
@@ -119,14 +119,14 @@ export function setupReflectorForCells() {
     'factory': () => new OpportunityNameComponent(),
     'parameters': [],
     'annotations': [
-      new ComponentAnnotation({
+      new Component({
         selector: 'opportunity-name',
         bind: {
           'cell-width': 'width',
           'opportunity': 'opportunity'
         }
       }),
-      new TemplateAnnotation({
+      new Template({
           directives: [],
           inline: `<div [style]="style">{{opportunity.name}}</div>`
       })
@@ -137,14 +137,14 @@ export function setupReflectorForCells() {
     'factory': () => new OfferingNameComponent(),
     'parameters': [],
     'annotations': [
-      new ComponentAnnotation({
+      new Component({
         selector: 'offering-name',
         bind: {
           'cell-width': 'width',
           'offering': 'offering'
         }
       }),
-      new TemplateAnnotation({
+      new Template({
           directives: [],
           inline: `<div [style]="style">{{offering.name}}</div>`
       })
@@ -155,14 +155,14 @@ export function setupReflectorForCells() {
     'factory': () => new StageButtonsComponent(),
     'parameters': [],
     'annotations': [
-      new ComponentAnnotation({
+      new Component({
         selector: 'stage-buttons',
         bind: {
           'cell-width': 'width',
           'offering': 'offering'
         }
       }),
-      new TemplateAnnotation({
+      new Template({
           directives: [Foreach],
           inline: `
             <div [style]="style">
@@ -181,14 +181,14 @@ export function setupReflectorForCells() {
     'factory': () => new AccountCellComponent(),
     'parameters': [],
     'annotations': [
-      new ComponentAnnotation({
+      new Component({
         selector: 'account-cell',
         bind: {
           'cell-width': 'width',
           'account': 'account'
         }
       }),
-      new TemplateAnnotation({
+      new Template({
           directives: [],
           inline: `
             <div [style]="style">
@@ -204,14 +204,14 @@ export function setupReflectorForCells() {
     'factory': () => new FormattedCellComponent(),
     'parameters': [],
     'annotations': [
-      new ComponentAnnotation({
+      new Component({
         selector: 'formatted-cell',
         bind: {
           'cell-width': 'width',
           'value': 'value'
         }
       }),
-      new TemplateAnnotation({
+      new Template({
           directives: [],
           inline: `<div [style]="style">{{formattedValue}}</div>`
       })
