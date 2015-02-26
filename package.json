@@ -1,6 +1,6 @@
 {
   "name": "angular",
-  "version": "2.0.0-alpha.6",
+  "version": "2.0.0-alpha.11",
   "description": "Angular 2 - a web framework for modern web apps",
   "homepage": "https://github.com/angular/angular",
   "bugs": "https://github.com/angular/angular/issues",
@@ -62,11 +62,12 @@
     "merge": "^1.2.0",
     "minimatch": "^2.0.1",
     "minimist": "1.1.x",
-    "protractor": "1.6.x",
+    "protractor": "1.7.x",
     "q": "^1.0.1",
     "run-sequence": "^0.3.6",
     "source-map": "^0.3.0",
     "sprintf-js": "1.0.*",
+    "ternary-stream": "^1.2.3",
     "through2": "^0.6.1",
     "yargs": "2.3.*"
   }

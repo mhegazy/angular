@@ -57,7 +57,6 @@ class MapWrapper {
   static Iterable values(Map m) => m.values;
 }
 
-// TODO: how to export StringMap=Map as a type?
 class StringMapWrapper {
   static HashMap create() => new HashMap();
   static bool contains(Map map, key) => map.containsKey(key);
@@ -67,6 +66,11 @@ class StringMapWrapper {
   }
   static void forEach(Map m, fn(v, k)) {
     m.forEach((k, v) => fn(v, k));
+  }
+  static HashMap merge(HashMap a, HashMap b) {
+    var m = new HashMap.from(a);
+    b.forEach((k, v) => m[k] = v);
+    return m;
   }
   static bool isEmpty(Map m) => m.isEmpty;
 }
@@ -138,6 +142,9 @@ class ListWrapper {
   }
   static List slice(List l, int from, int to) {
     return l.sublist(from, to);
+  }
+  static void sort(List l, compareFn(a,b)) {
+    l.sort(compareFn);
   }
 }
 

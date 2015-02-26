@@ -14,6 +14,13 @@ export class PromiseWrapper {
     return Promise.reject(obj);
   }
 
+  // Note: We can't rename this method into `catch`, as this is not a valid
+  // method name in Dart.
+  //static catchError<T>(promise:Promise<T>, onError:Function):Promise<T> {
+  static catchError(promise:Promise<any>, onError:Function):Promise<any> {
+    return promise.catch(onError);
+  }
+
   //static all<T>(promises:List<Promise<T>>):Promise<T[]> {
   static all(promises:List<any>):Promise<any> {
     if (promises.length == 0) return Promise.resolve([]);
@@ -36,7 +43,7 @@ export class PromiseWrapper {
 
     return {
       promise: p,
-      complete: resolve,
+      resolve: resolve,
       reject: reject
     };
   }

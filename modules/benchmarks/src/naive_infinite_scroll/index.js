@@ -4,6 +4,7 @@ import {MapWrapper} from 'angular2/src/facade/collection';
 
 import {Parser, Lexer, ChangeDetector, ChangeDetection}
     from 'angular2/change_detection';
+import {ExceptionHandler} from 'angular2/src/core/exception_handler';
 import {
   bootstrap, Component, Viewport, Template, ViewContainer, Compiler, onChange
 }  from 'angular2/angular2';
@@ -16,6 +17,10 @@ import {TemplateResolver} from 'angular2/src/core/compiler/template_resolver';
 import {LifeCycle} from 'angular2/src/core/life_cycle/life_cycle';
 import {XHR} from 'angular2/src/core/compiler/xhr/xhr';
 import {XHRImpl} from 'angular2/src/core/compiler/xhr/xhr_impl';
+import {UrlResolver} from 'angular2/src/core/compiler/url_resolver';
+import {StyleUrlResolver} from 'angular2/src/core/compiler/style_url_resolver';
+import {ComponentUrlMapper} from 'angular2/src/core/compiler/component_url_mapper';
+import {StyleInliner} from 'angular2/src/core/compiler/style_inliner';
 
 import {If, Foreach} from 'angular2/directives';
 import {App, setupReflectorForApp} from './app';
@@ -44,7 +49,7 @@ export function setupReflector() {
   reflector.registerGetters({
     'scrollAreas': (o) => o.scrollAreas,
     'length': (o) => o.length,
-    'iterable': (o) => o.iterable,
+    'iterableChanges': (o) => o.iterableChanges,
     'scrollArea': (o) => o.scrollArea,
     'item': (o) => o.item,
     'visibleItems': (o) => o.visibleItems,
@@ -95,7 +100,7 @@ export function setupReflector() {
     'scrollArea': (o, v) => o.scrollArea = v,
     'item': (o, v) => o.item = v,
     'visibleItems': (o, v) => o.visibleItems = v,
-    'iterable': (o, v) => o.iterable = v,
+    'iterableChanges': (o, v) => o.iterableChanges = v,
     'width': (o, v) => o.width = v,
     'value': (o, v) => o.value = v,
     'company': (o, v) => o.company = v,
@@ -157,7 +162,7 @@ export function setupReflectorForAngular() {
     'annotations' : [new Viewport({
       selector: '[if]',
       bind: {
-        'if': 'condition'
+        'condition': 'if'
       }
     })]
   });
@@ -167,20 +172,20 @@ export function setupReflectorForAngular() {
     'parameters': [[ViewContainer]],
     'annotations' : [new Viewport({
       selector: '[foreach]',
-      lifecycle: [onChange],
       bind: {
-        'in': 'iterable[]'
+        'iterableChanges': 'in | iterableDiff'
       }
     })]
   });
 
   reflector.registerType(Compiler, {
     "factory": (changeDetection, templateLoader, reader, parser, compilerCache, shadowDomStrategy,
-      resolver) =>
+      tplResolver, cmpUrlMapper, urlResolver) =>
       new Compiler(changeDetection, templateLoader, reader, parser, compilerCache, shadowDomStrategy,
-        resolver),
+        tplResolver, cmpUrlMapper, urlResolver),
     "parameters": [[ChangeDetection], [TemplateLoader], [DirectiveMetadataReader], [Parser],
-                   [CompilerCache], [ShadowDomStrategy], [TemplateResolver]],
+                   [CompilerCache], [ShadowDomStrategy], [TemplateResolver], [ComponentUrlMapper],
+                   [UrlResolver]],
     "annotations": []
   });
 
@@ -197,8 +202,8 @@ export function setupReflectorForAngular() {
   });
 
   reflector.registerType(TemplateLoader, {
-    "factory": (xhr) => new TemplateLoader(xhr),
-    "parameters": [[XHR]],
+    "factory": (xhr, urlResolver) => new TemplateLoader(xhr, urlResolver),
+    "parameters": [[XHR], [UrlResolver]],
     "annotations": []
   });
 
@@ -226,16 +231,52 @@ export function setupReflectorForAngular() {
     'annotations': []
   });
 
-  reflector.registerType(LifeCycle, {
-    "factory": (cd) => new LifeCycle(cd),
-    "parameters": [[ChangeDetector]],
-    "annotations": []
-  });
-
-  reflector.registerType(ShadowDomStrategy, {
-    "factory": () => new NativeShadowDomStrategy(),
+  reflector.registerType(ExceptionHandler, {
+    "factory": () => new ExceptionHandler(),
     "parameters": [],
     "annotations": []
   });
 
+  reflector.registerType(LifeCycle, {
+    "factory": (exHandler, cd) => new LifeCycle(exHandler, cd),
+    "parameters": [[ExceptionHandler], [ChangeDetector]],
+    "annotations": []
+  });
+
+  reflector.registerType(ShadowDomStrategy, {
+    "factory": (strategy) => strategy,
+    "parameters": [[NativeShadowDomStrategy]],
+    "annotations": []
+  });
+
+  reflector.registerType(NativeShadowDomStrategy, {
+    "factory": (styleUrlResolver) => new NativeShadowDomStrategy(styleUrlResolver),
+    "parameters": [[StyleUrlResolver]],
+    "annotations": []
+  });
+
+  reflector.registerType(StyleUrlResolver, {
+    "factory": (urlResolver) => new StyleUrlResolver(urlResolver),
+    "parameters": [[UrlResolver]],
+    "annotations": []
+  });
+
+  reflector.registerType(UrlResolver, {
+    "factory": () => new UrlResolver(),
+    "parameters": [],
+    "annotations": []
+  });
+
+  reflector.registerType(ComponentUrlMapper, {
+    "factory": () => new ComponentUrlMapper(),
+    "parameters": [],
+    "annotations": []
+  });
+
+  reflector.registerType(StyleInliner, {
+    "factory": (xhr, styleUrlResolver, urlResolver) =>
+      new StyleInliner(xhr, styleUrlResolver, urlResolver),
+    "parameters": [[XHR], [StyleUrlResolver], [UrlResolver]],
+    "annotations": []
+  });
 }

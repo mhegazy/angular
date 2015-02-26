@@ -2,6 +2,7 @@ import *  as app from './index_common';
 
 import {Component, Decorator, Template, NgElement} from 'angular2/angular2';
 import {Lexer, Parser, ChangeDetection, ChangeDetector} from 'angular2/change_detection';
+import {ExceptionHandler} from 'angular2/src/core/exception_handler';
 import {LifeCycle} from 'angular2/src/core/life_cycle/life_cycle';
 
 import {Compiler, CompilerCache} from 'angular2/src/core/compiler/compiler';
@@ -11,6 +12,10 @@ import {TemplateLoader} from 'angular2/src/core/compiler/template_loader';
 import {TemplateResolver} from 'angular2/src/core/compiler/template_resolver';
 import {XHR} from 'angular2/src/core/compiler/xhr/xhr';
 import {XHRImpl} from 'angular2/src/core/compiler/xhr/xhr_impl';
+import {UrlResolver} from 'angular2/src/core/compiler/url_resolver';
+import {StyleUrlResolver} from 'angular2/src/core/compiler/style_url_resolver';
+import {ComponentUrlMapper} from 'angular2/src/core/compiler/component_url_mapper';
+import {StyleInliner} from 'angular2/src/core/compiler/style_inliner';
 
 import {reflector} from 'angular2/src/reflection/reflection';
 
@@ -44,11 +49,12 @@ function setup() {
 
   reflector.registerType(Compiler, {
     "factory": (changeDetection, templateLoader, reader, parser, compilerCache, shadowDomStrategy,
-                resolver) =>
+                tplResolver, cmpUrlMapper, urlResolver) =>
       new Compiler(changeDetection, templateLoader, reader, parser, compilerCache, shadowDomStrategy,
-        resolver),
+        tplResolver, cmpUrlMapper, urlResolver),
     "parameters": [[ChangeDetection], [TemplateLoader], [DirectiveMetadataReader], [Parser],
-                   [CompilerCache], [ShadowDomStrategy], [TemplateResolver]],
+                   [CompilerCache], [ShadowDomStrategy], [TemplateResolver], [ComponentUrlMapper],
+                   [UrlResolver]],
     "annotations": []
   });
 
@@ -65,8 +71,8 @@ function setup() {
   });
 
   reflector.registerType(TemplateLoader, {
-    "factory": (xhr) => new TemplateLoader(xhr),
-    "parameters": [[XHR]],
+    "factory": (xhr, urlResolver) => new TemplateLoader(xhr, urlResolver),
+    "parameters": [[XHR], [UrlResolver]],
     "annotations": []
   });
 
@@ -94,15 +100,52 @@ function setup() {
     "annotations": []
   });
 
+  reflector.registerType(ExceptionHandler, {
+    "factory": () => new ExceptionHandler(),
+    "parameters": [],
+    "annotations": []
+  });
+
   reflector.registerType(LifeCycle, {
-    "factory": (cd) => new LifeCycle(cd),
-    "parameters": [[ChangeDetector]],
+    "factory": (exHandler, cd) => new LifeCycle(exHandler, cd),
+    "parameters": [[ExceptionHandler], [ChangeDetector]],
     "annotations": []
   });
 
   reflector.registerType(ShadowDomStrategy, {
-    "factory": () => new NativeShadowDomStrategy(),
+    "factory": (strategy) => strategy,
+    "parameters": [[NativeShadowDomStrategy]],
+    "annotations": []
+  });
+
+  reflector.registerType(NativeShadowDomStrategy, {
+    "factory": (styleUrlResolver) => new NativeShadowDomStrategy(styleUrlResolver),
+    "parameters": [[StyleUrlResolver]],
+    "annotations": []
+  });
+
+  reflector.registerType(StyleUrlResolver, {
+    "factory": (urlResolver) => new StyleUrlResolver(urlResolver),
+    "parameters": [[UrlResolver]],
+    "annotations": []
+  });
+
+  reflector.registerType(UrlResolver, {
+    "factory": () => new UrlResolver(),
     "parameters": [],
+    "annotations": []
+  });
+
+  reflector.registerType(ComponentUrlMapper, {
+    "factory": () => new ComponentUrlMapper(),
+    "parameters": [],
+    "annotations": []
+  });
+
+  reflector.registerType(StyleInliner, {
+    "factory": (xhr, styleUrlResolver, urlResolver) =>
+      new StyleInliner(xhr, styleUrlResolver, urlResolver),
+    "parameters": [[XHR], [StyleUrlResolver], [UrlResolver]],
     "annotations": []
   });
 

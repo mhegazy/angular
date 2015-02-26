@@ -4,30 +4,32 @@ var spawn = require('child_process').spawn;
 var path = require('path');
 var glob = require('glob');
 var fs = require('fs');
+var util = require('./util');
 
 module.exports = function(gulp, plugins, config) {
   return function() {
-    var dartModuleFolders = [].slice.call(glob.sync(config.dest + '/*'));
     var tempFile = '_analyzer.dart';
-    // analyze in parallel!
-    return Q.all(dartModuleFolders.map(function(dir) {
-      var srcFiles = [].slice.call(glob.sync(dir + '{/lib,/web}/**/*.dart', {
-        cwd: dir
-      }));
-      var testFiles = [].slice.call(glob.sync('test/**/*_spec.dart', {
-        cwd: dir
-      }));
-      var analyzeFile = ['library _analyzer;'];
-      srcFiles.concat(testFiles).forEach(function(fileName, index) {
-        if (fileName !== tempFile && fileName.indexOf("/packages/") === -1) {
-          analyzeFile.push('import "./'+fileName+'" as mod'+index+';');
-        }
-      });
-      fs.writeFileSync(path.join(dir, tempFile), analyzeFile.join('\n'));
-      var defer = Q.defer();
-      analyze(dir, defer.makeNodeResolver());
-      return defer.promise;
-    }));
+    return util.forEachSubDirSequential(
+      config.dest,
+      function(dir) {
+        var srcFiles = [].slice.call(glob.sync('{/lib,/web}/**/*.dart', {
+          cwd: dir
+        }));
+        var testFiles = [].slice.call(glob.sync('test/**/*_spec.dart', {
+          cwd: dir
+        }));
+        var analyzeFile = ['library _analyzer;'];
+        srcFiles.concat(testFiles).forEach(function(fileName, index) {
+          if (fileName !== tempFile && fileName.indexOf("/packages/") === -1) {
+            analyzeFile.push('import "./'+fileName+'" as mod'+index+';');
+          }
+        });
+        fs.writeFileSync(path.join(dir, tempFile), analyzeFile.join('\n'));
+        var defer = Q.defer();
+        analyze(dir, defer.makeNodeResolver());
+        return defer.promise;
+      }
+    );
 
     function analyze(dirName, done) {
       //TODO remove --package-warnings once dartanalyzer handles transitive libraries
@@ -54,11 +56,14 @@ module.exports = function(gulp, plugins, config) {
           return;
         }
         if (line.match(/Unused import/)) {
-          return;
-        }
-        if (line.match(/\[info\]/)) {
-          // Ignore [info] warnings
-          return;
+          if (line.match(/_analyzer\.dart/)) {
+            return;
+          }
+
+          //TODO: remove this work-around once #704 is fixed
+          if (line.match(/\/test\/core\/compiler\/view_.*spec\.dart/)) {
+            return;
+          }
         }
         if (line.match(/\[hint\]/)) {
           hintCount++;

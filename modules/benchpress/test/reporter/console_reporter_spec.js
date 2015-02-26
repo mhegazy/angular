@@ -1,11 +1,11 @@
 import {describe, ddescribe, it, iit, xit, expect, beforeEach, afterEach} from 'angular2/test_lib';
 
-import { isBlank, isPresent } from 'angular2/src/facade/lang';
+import { isBlank, isPresent, Date, DateWrapper } from 'angular2/src/facade/lang';
 import { List, ListWrapper } from 'angular2/src/facade/collection';
 
 import {
   SampleState, Reporter, bind, Injector,
-  ConsoleReporter, SampleDescription
+  ConsoleReporter, SampleDescription, MeasureValues
 } from 'benchpress/benchpress';
 
 export function main() {
@@ -29,7 +29,7 @@ export function main() {
       if (isPresent(columnWidth)) {
         ListWrapper.push(bindings, bind(ConsoleReporter.COLUMN_WIDTH).toValue(columnWidth));
       }
-      reporter = new Injector(bindings).get(Reporter);
+      reporter = new Injector(bindings).get(ConsoleReporter);
     }
 
     it('should print the sample id, description and table header', () => {
@@ -68,9 +68,9 @@ export function main() {
         }
       });
       log = [];
-      reporter.reportMeasureValues(0, {
+      reporter.reportMeasureValues(mv(0, 0, {
         'a': 1.23, 'b': 2
-      });
+      }));
       expect(log).toEqual([
         '    1.23 |     2.00'
       ]);
@@ -85,17 +85,20 @@ export function main() {
         }
       });
       log = [];
-      reporter.reportSample([], [{
+      reporter.reportSample([], [mv(0,0,{
         'a': 3, 'b': 6
-      },{
+      }), mv(1,1,{
         'a': 5, 'b': 9
-      }]);
+      })]);
       expect(log).toEqual([
         '======== | ========',
-        '4.00±25% | 7.50±20%'
+        '4.00+-25% | 7.50+-20%'
       ]);
     });
 
   });
 }
 
+function mv(runIndex, time, values) {
+  return new MeasureValues(runIndex, DateWrapper.fromMillis(time), values);
+}

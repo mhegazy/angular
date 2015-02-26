@@ -1,6 +1,5 @@
-import { StringMapWrapper, ListWrapper } from 'angular2/src/facade/collection';
+import { StringMapWrapper, ListWrapper, StringMap } from 'angular2/src/facade/collection';
 import { bind, OpaqueToken } from 'angular2/di';
-import { Sampler } from './sampler';
 import { Validator } from './validator';
 import { Metric } from './metric';
 import { Options } from './sample_options';
@@ -13,10 +12,10 @@ export class SampleDescription {
   static get BINDINGS() { return _BINDINGS; }
 
   id:string;
-  description:any;
-  metrics:any;
+  description:StringMap;
+  metrics:StringMap;
 
-  constructor(id, descriptions, metrics) {
+  constructor(id, descriptions:List<StringMap>, metrics:StringMap) {
     this.id = id;
     this.metrics = metrics;
     this.description = {};
@@ -28,15 +27,18 @@ export class SampleDescription {
 
 var _BINDINGS = [
   bind(SampleDescription).toFactory(
-    (metric, id, forceGc, validator, defaultDesc, userDesc) => new SampleDescription(id,
+    (metric, id, forceGc, userAgent, validator, defaultDesc, userDesc) => new SampleDescription(id,
       [
-        {'forceGc': forceGc},
+        {'forceGc': forceGc, 'userAgent': userAgent},
         validator.describe(),
         defaultDesc,
         userDesc
       ],
       metric.describe()),
-    [Metric, Options.SAMPLE_ID, Options.FORCE_GC, Validator, Options.DEFAULT_DESCRIPTION, Options.SAMPLE_DESCRIPTION]
+    [
+      Metric, Options.SAMPLE_ID, Options.FORCE_GC, Options.USER_AGENT,
+      Validator, Options.DEFAULT_DESCRIPTION, Options.SAMPLE_DESCRIPTION
+    ]
   ),
   bind(Options.DEFAULT_DESCRIPTION).toValue({}),
   bind(Options.SAMPLE_DESCRIPTION).toValue({})

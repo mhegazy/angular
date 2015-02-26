@@ -1,12 +1,118 @@
 // load traceur runtime as our tests are written in es6
 require('traceur/bin/traceur-runtime.js');
 
-var nodeUuid = require('node-uuid');
-var benchpress = require('./dist/js/cjs/benchpress/benchpress');
-var SeleniumWebDriverAdapter = require('./dist/js/cjs/benchpress/src/webdriver/selenium_webdriver_adapter').SeleniumWebDriverAdapter;
-var cmdArgs = require('minimist')(process.argv);
+var argv = require('yargs')
+    .usage('Angular e2e/perf test options.')
+    .options({
+      'sample-size': {
+        describe: 'sample size',
+        default: 20,
+        type: 'boolean'
+      },
+      'force-gc': {
+        describe: 'force gc.',
+        default: false,
+        type: 'boolean'
+      },
+      'benchmark': {
+        describe: 'whether to run the benchmarks',
+        default: false
+      },
+      'browsers': {
+        describe: 'comma separated list of preconfigured browsers to use',
+        default: 'ChromeDesktop'
+      },
+      'spec': {
+        describe: 'comma separated file patterns to test',
+        default: false
+      }
+    })
+    .help('ng-help')
+    .wrap(40)
+    .argv
 
-var cmdLineBrowsers = cmdArgs.browsers ? cmdArgs.browsers.split(',') : [];
+var browsers = argv['browsers'].split(',');
+
+var BROWSER_CAPS = {
+  Dartium: {
+    name: 'Dartium',
+    browserName: 'chrome',
+    chromeOptions: {
+      'binary': process.env.DARTIUM,
+      'args': ['--js-flags=--expose-gc'],
+      'perfLoggingPrefs': {
+        'traceCategories': 'blink.console,disabled-by-default-devtools.timeline'
+      }
+    },
+    loggingPrefs: {
+      performance: 'ALL',
+      browser: 'ALL'
+    }
+  },
+  ChromeDesktop: {
+    browserName: 'chrome',
+    chromeOptions: {
+      'args': ['--js-flags=--expose-gc'],
+      'perfLoggingPrefs': {
+        'traceCategories': 'blink.console,disabled-by-default-devtools.timeline'
+      }
+    },
+    loggingPrefs: {
+      performance: 'ALL',
+      browser: 'ALL'
+    }
+  },
+  ChromeAndroid: {
+    browserName: 'chrome',
+    chromeOptions: {
+      androidPackage: 'com.android.chrome',
+      'args': ['--js-flags=--expose-gc'],
+      'perfLoggingPrefs': {
+        'traceCategories': 'blink.console,disabled-by-default-devtools.timeline'
+      }
+    },
+    loggingPrefs: {
+      performance: 'ALL',
+      browser: 'ALL'
+    }
+  },
+  IPhoneSimulator: {
+    browserName: 'MobileSafari',
+    simulator: true,
+    CFBundleName: 'Safari',
+    device: 'iphone',
+    instruments: 'true',
+    loggingPrefs: {
+      performance: 'ALL',
+      browser: 'ALL'
+    }
+  },
+  IPadNative: {
+    browserName: 'MobileSafari',
+    simulator: false,
+    CFBundleName: 'Safari',
+    device: 'ipad',
+    loggingPrefs: {
+      performance: 'ALL',
+      browser: 'ALL'
+    }
+  }
+};
+
+var getBenchmarkFiles = function (benchmark, spec) {
+  var specFiles = [];
+  var perfFiles = [];
+  if (spec.length) {
+    spec.split(',').forEach(function (name) {
+      specFiles.push('dist/js/cjs/**/e2e_test/' + name)
+      perfFiles.push('dist/js/cjs/**/e2e_test/' + name)
+    });
+  } else {
+    specFiles.push('dist/js/cjs/**/e2e_test/**/*_spec.js');
+    perfFiles.push('dist/js/cjs/**/e2e_test/**/*_perf.js');
+  }
+  return benchmark ? perfFiles : specFiles.concat(perfFiles);
+};
 
 var config = exports.config = {
   // Disable waiting for Angular as we don't have an integration layer yet...
@@ -23,11 +129,26 @@ var config = exports.config = {
     }
   },
 
+  specs: getBenchmarkFiles(argv['benchmark'], argv['spec']),
+
+  exclude: [
+    'dist/js/cjs/**/node_modules/**',
+  ],
+
+  multiCapabilities: browsers.map(function(browserName) {
+    var caps = BROWSER_CAPS[browserName];
+    console.log('Testing against', browserName);
+    if (!caps) {
+      throw new Error('Not configured browser name: '+browserName);
+    }
+    return caps;
+  }),
+
   framework: 'jasmine2',
 
   jasmineNodeOpts: {
     showColors: true,
-    defaultTimeoutInterval: 30000
+    defaultTimeoutInterval: argv.benchpress ? 80000 : 30000
   },
   params: {
     benchmark: {
@@ -39,6 +160,11 @@ var config = exports.config = {
 };
 
 exports.createBenchpressRunner = function(options) {
+  var nodeUuid = require('node-uuid');
+  var benchpress = require('./dist/js/cjs/benchpress/benchpress');
+  var SeleniumWebDriverAdapter =
+    require('./dist/js/cjs/benchpress/src/webdriver/selenium_webdriver_adapter').SeleniumWebDriverAdapter;
+
   // TODO(tbosch): add cloud reporter again (only when !options.test)
   // var cloudReporterConfig;
   // if (process.env.CLOUD_SECRET_PATH) {
@@ -59,67 +185,19 @@ exports.createBenchpressRunner = function(options) {
     benchpress.bind(benchpress.WebDriverAdapter).toFactory(
       function() { return new SeleniumWebDriverAdapter(global.browser); }, []
     ),
-    benchpress.bind(benchpress.Options.FORCE_GC).toValue(options.forceGc),
+    benchpress.bind(benchpress.Options.FORCE_GC).toValue(argv['force-gc']),
     benchpress.bind(benchpress.Options.DEFAULT_DESCRIPTION).toValue({
       'lang': options.lang,
       'runId': runId
     })
   ];
-  if (options.test) {
-    bindings.push(benchpress.SizeValidator.BINDINGS);
-    bindings.push(benchpress.bind(benchpress.SizeValidator.SAMPLE_SIZE).toValue(1));
+  if (argv['benchmark']) {
+    bindings.push(benchpress.Validator.bindTo(benchpress.RegressionSlopeValidator));
+    bindings.push(benchpress.bind(benchpress.RegressionSlopeValidator.SAMPLE_SIZE).toValue(argv['sample-size']));
   } else {
-    bindings.push(benchpress.RegressionSlopeValidator.BINDINGS);
-    bindings.push(benchpress.bind(benchpress.RegressionSlopeValidator.SAMPLE_SIZE).toValue(options.sampleSize));
+    bindings.push(benchpress.Validator.bindTo(benchpress.SizeValidator));
+    bindings.push(benchpress.bind(benchpress.SizeValidator.SAMPLE_SIZE).toValue(1));
   }
 
   global.benchpressRunner = new benchpress.Runner(bindings);
-}
-
-
-var POSSIBLE_CAPS = {
-  Dartium: {
-    name: 'Dartium',
-    browserName: 'chrome',
-    chromeOptions: {
-      'binary': process.env.DARTIUM,
-      'args': ['--js-flags=--expose-gc']
-    },
-    loggingPrefs: {
-      performance: 'ALL',
-      browser: 'ALL'
-    }
-  },
-  ChromeDesktop: {
-    browserName: 'chrome',
-    chromeOptions: {
-      'args': ['--js-flags=--expose-gc']
-    },
-    loggingPrefs: {
-      performance: 'ALL',
-      browser: 'ALL'
-    }
-  },
-  ChromeAndroid: {
-    browserName: 'chrome',
-    chromeOptions: {
-      androidPackage: 'com.android.chrome',
-      'args': ['--js-flags=--expose-gc']
-    },
-    loggingPrefs: {
-      performance: 'ALL',
-      browser: 'ALL'
-    }
-  }
-};
-if (cmdLineBrowsers.length) {
-  config.multiCapabilities = cmdLineBrowsers.map(function(browserName) {
-    var caps = POSSIBLE_CAPS[browserName];
-    if (!caps) {
-      throw new Error('Not configured browser name: '+browserName);
-    }
-    return caps;
-  });
-} else {
-  config.multiCapabilities = [POSSIBLE_CAPS.ChromeDesktop];
 }

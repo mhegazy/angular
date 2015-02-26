@@ -1,4 +1,4 @@
-import { print, isPresent, isBlank } from 'angular2/src/facade/lang';
+import { print, isPresent, isBlank, NumberWrapper } from 'angular2/src/facade/lang';
 import { StringMapWrapper, ListWrapper, List } from 'angular2/src/facade/collection';
 import { Promise, PromiseWrapper } from 'angular2/src/facade/async';
 import { Math } from 'angular2/src/facade/math';
@@ -7,6 +7,7 @@ import { bind, OpaqueToken } from 'angular2/di';
 import { Statistic } from '../statistic';
 import { Reporter } from '../reporter';
 import { SampleDescription } from '../sample_description';
+import { MeasureValues } from '../measure_values';
 
 /**
  * A reporter for the console
@@ -27,14 +28,8 @@ export class ConsoleReporter extends Reporter {
     return result + value;
   }
 
-  static _formatNum(num) {
-    var result;
-    if (num === 0) {
-      result = '000';
-    } else {
-      result = `${Math.floor(num * 100)}`;
-    }
-    return result.substring(0, result.length - 2) + '.' + result.substring(result.length-2);
+  static _formatNum(n) {
+    return NumberWrapper.toFixed(n, 2);
   }
 
   static _sortedProps(obj) {
@@ -72,23 +67,26 @@ export class ConsoleReporter extends Reporter {
     this._printStringRow(this._metricNames.map( (_) => '' ), '-');
   }
 
-  reportMeasureValues(index:number, measuredValues:any):Promise<any> {
+  reportMeasureValues(measureValues:MeasureValues):Promise<any> {
     var formattedValues = ListWrapper.map(this._metricNames, (metricName) => {
-      var value = measuredValues[metricName];
+      var value = measureValues.values[metricName];
       return ConsoleReporter._formatNum(value);
     });
     this._printStringRow(formattedValues);
     return PromiseWrapper.resolve(null);
   }
 
-  reportSample(completeSample:List<any>, validSample:List<any>):Promise<any> {
+  reportSample(completeSample:List<MeasureValues>, validSample:List<MeasureValues>):Promise<any> {
     this._printStringRow(this._metricNames.map( (_) => '' ), '=');
     this._printStringRow(
       ListWrapper.map(this._metricNames, (metricName) => {
-        var sample = ListWrapper.map(validSample, (measuredValues) => measuredValues[metricName]);
+        var sample = ListWrapper.map(validSample, (measureValues) => measureValues.values[metricName]);
         var mean = Statistic.calculateMean(sample);
         var cv = Statistic.calculateCoefficientOfVariation(sample, mean);
-        return `${ConsoleReporter._formatNum(mean)}\u00B1${Math.floor(cv)}%`;
+        var formattedCv = NumberWrapper.isNaN(cv) ? 'NaN' : Math.floor(cv);
+        // Note: Don't use the unicode character for +- as it might cause
+        // hickups consoles...
+        return `${ConsoleReporter._formatNum(mean)}+-${formattedCv}%`;
       })
     );
     return PromiseWrapper.resolve(null);
@@ -108,7 +106,7 @@ export class ConsoleReporter extends Reporter {
 var _PRINT = new OpaqueToken('ConsoleReporter.print');
 var _COLUMN_WIDTH = new OpaqueToken('ConsoleReporter.columnWidht');
 var _BINDINGS = [
-  bind(Reporter).toFactory(
+  bind(ConsoleReporter).toFactory(
     (columnWidth, sampleDescription, print) => new ConsoleReporter(columnWidth, sampleDescription, print),
     [_COLUMN_WIDTH, SampleDescription, _PRINT]
   ),

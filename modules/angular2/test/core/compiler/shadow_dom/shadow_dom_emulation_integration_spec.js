@@ -1,20 +1,28 @@
 import {describe, xit, it, expect, beforeEach, ddescribe, iit, el} from 'angular2/test_lib';
 
+import {StringMapWrapper, List} from 'angular2/src/facade/collection';
+import {Type} from 'angular2/src/facade/lang';
 import {DOM} from 'angular2/src/facade/dom';
-import {StringMapWrapper, MapWrapper, List} from 'angular2/src/facade/collection';
-import {isPresent, Type} from 'angular2/src/facade/lang';
 
 import {Injector} from 'angular2/di';
 import {Lexer, Parser, ChangeDetector, dynamicChangeDetection} from 'angular2/change_detection';
+import {ExceptionHandler} from 'angular2/src/core/exception_handler';
 
 import {Compiler, CompilerCache} from 'angular2/src/core/compiler/compiler';
 import {LifeCycle} from 'angular2/src/core/life_cycle/life_cycle';
 import {DirectiveMetadataReader} from 'angular2/src/core/compiler/directive_metadata_reader';
 import {ShadowDomStrategy,
         NativeShadowDomStrategy,
-        EmulatedShadowDomStrategy} from 'angular2/src/core/compiler/shadow_dom_strategy';
+        EmulatedScopedShadowDomStrategy,
+        EmulatedUnscopedShadowDomStrategy,
+} from 'angular2/src/core/compiler/shadow_dom_strategy';
 import {TemplateLoader} from 'angular2/src/core/compiler/template_loader';
-import {TemplateResolver} from 'angular2/src/core/compiler/template_resolver';
+import {ComponentUrlMapper} from 'angular2/src/core/compiler/component_url_mapper';
+import {UrlResolver} from 'angular2/src/core/compiler/url_resolver';
+import {StyleUrlResolver} from 'angular2/src/core/compiler/style_url_resolver';
+import {StyleInliner} from 'angular2/src/core/compiler/style_inliner';
+
+import {MockTemplateResolver} from 'angular2/src/mock/template_resolver_mock';
 
 import {Decorator, Component, Viewport} from 'angular2/src/core/annotations/annotations';
 import {Template} from 'angular2/src/core/annotations/template';
@@ -23,10 +31,14 @@ import {ViewContainer} from 'angular2/src/core/compiler/view_container';
 
 export function main() {
   describe('integration tests', function() {
+    var urlResolver = new UrlResolver();
+    var styleUrlResolver = new StyleUrlResolver(urlResolver);
+    var styleInliner = new StyleInliner(null, styleUrlResolver, urlResolver);
 
     StringMapWrapper.forEach({
-        "native" : new NativeShadowDomStrategy(),
-        "emulated" : new EmulatedShadowDomStrategy()
+        "native" : new NativeShadowDomStrategy(styleUrlResolver),
+        "scoped" : new EmulatedScopedShadowDomStrategy(styleInliner, styleUrlResolver, DOM.createElement('div')),
+        "unscoped" : new EmulatedUnscopedShadowDomStrategy(styleUrlResolver, DOM.createElement('div')),
       },
       (strategy, name) => {
 
@@ -34,14 +46,16 @@ export function main() {
         var compiler, tplResolver;
 
         beforeEach(() => {
-          tplResolver = new FakeTemplateResolver();
+          tplResolver = new MockTemplateResolver();
           compiler = new Compiler(dynamicChangeDetection,
-            new TemplateLoader(null),
+            new TemplateLoader(null, null),
             new DirectiveMetadataReader(),
             new Parser(new Lexer()),
             new CompilerCache(),
             strategy,
-            tplResolver
+            tplResolver,
+            new ComponentUrlMapper(),
+            urlResolver
           );
         });
 
@@ -53,7 +67,7 @@ export function main() {
           compiler.compile(MyComp)
             .then(createView)
             .then((view) => {
-              var lc = new LifeCycle(view.changeDetector, false);
+              var lc = new LifeCycle(new ExceptionHandler(), view.changeDetector, false);
               assertions(view, lc);
             });
         }
@@ -336,27 +350,4 @@ function createView(pv) {
   var view = pv.instantiate(null, null);
   view.hydrate(new Injector([]), null, {});
   return view;
-}
-
-class FakeTemplateResolver extends TemplateResolver {
-  _cmpTemplates: Map<any,any>;
-
-  constructor() {
-    super();
-    this._cmpTemplates = MapWrapper.create();
-  }
-
-  setTemplate(component: Type, template: Template) {
-    MapWrapper.set(this._cmpTemplates, component, template);
-  }
-
-  resolve(component: Type): Template {
-    var override = MapWrapper.get(this._cmpTemplates, component);
-
-    if (isPresent(override)) {
-      return override;
-    }
-
-    return super.resolve(component);
-  }
 }

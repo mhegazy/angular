@@ -13,11 +13,12 @@ import {createDefaultSteps} from './pipeline/default_steps';
 import {TemplateLoader} from './template_loader';
 import {TemplateResolver} from './template_resolver';
 import {DirectiveMetadata} from './directive_metadata';
-import {Component} from '../annotations/annotations';
 import {Template} from '../annotations/template';
-import {Content} from './shadow_dom_emulation/content_tag';
 import {ShadowDomStrategy} from './shadow_dom_strategy';
 import {CompileStep} from './pipeline/compile_step';
+import {ComponentUrlMapper} from './component_url_mapper';
+import {UrlResolver} from './url_resolver';
+
 
 /**
  * Cache that stores the ProtoView of the template of a component.
@@ -58,6 +59,9 @@ export class Compiler {
   _shadowDomStrategy: ShadowDomStrategy;
   _shadowDomDirectives: List<DirectiveMetadata>;
   _templateResolver: TemplateResolver;
+  _componentUrlMapper: ComponentUrlMapper;
+  _urlResolver: UrlResolver;
+  _appUrl: string;
 
   constructor(changeDetection:ChangeDetection,
               templateLoader:TemplateLoader,
@@ -65,7 +69,9 @@ export class Compiler {
               parser:Parser,
               cache:CompilerCache,
               shadowDomStrategy: ShadowDomStrategy,
-              templateResolver: TemplateResolver) {
+              templateResolver: TemplateResolver,
+              componentUrlMapper: ComponentUrlMapper,
+              urlResolver: UrlResolver) {
     this._changeDetection = changeDetection;
     this._reader = reader;
     this._parser = parser;
@@ -79,6 +85,9 @@ export class Compiler {
       ListWrapper.push(this._shadowDomDirectives, reader.read(types[i]));
     }
     this._templateResolver = templateResolver;
+    this._componentUrlMapper = componentUrlMapper;
+    this._urlResolver = urlResolver;
+    this._appUrl = urlResolver.resolve(null, './');
   }
 
   createSteps(component:Type, template: Template):List<CompileStep> {
@@ -91,8 +100,10 @@ export class Compiler {
 
     var cmpMetadata = this._reader.read(component);
 
+    var templateUrl = this._templateLoader.getTemplateUrl(template);
+
     return createDefaultSteps(this._changeDetection, this._parser, cmpMetadata, dirMetadata,
-      this._shadowDomStrategy);
+      this._shadowDomStrategy, templateUrl);
   }
 
   compile(component: Type):Promise<ProtoView> {
@@ -119,6 +130,10 @@ export class Compiler {
 
     var template = this._templateResolver.resolve(component);
 
+    var componentUrl = this._componentUrlMapper.getUrl(component);
+    var baseUrl = this._urlResolver.resolve(this._appUrl, componentUrl);
+    this._templateLoader.setBaseUrl(template, baseUrl);
+
     var tplElement = this._templateLoader.load(template);
 
     if (PromiseWrapper.isPromise(tplElement)) {
@@ -136,7 +151,15 @@ export class Compiler {
   // TODO(vicb): union type return ProtoView or Promise<ProtoView>
   _compileTemplate(template: Template, tplElement: Element, component: Type) {
     var pipeline = new CompilePipeline(this.createSteps(component, template));
-    var compileElements = pipeline.process(tplElement);
+    var compilationCtxtDescription = stringify(this._reader.read(component).type);
+    var compileElements;
+
+    try {
+      compileElements = pipeline.process(tplElement, compilationCtxtDescription);
+    } catch(ex) {
+      return PromiseWrapper.reject(ex);
+    }
+
     var protoView = compileElements[0].inheritedProtoView;
 
     // Populate the cache before compiling the nested components,
@@ -153,6 +176,12 @@ export class Compiler {
       }
     }
 
+    if (protoView.stylePromises.length > 0) {
+      // The protoView is ready after all asynchronous styles are ready
+      var syncProtoView = protoView;
+      protoView = PromiseWrapper.all(syncProtoView.stylePromises).then((_) => syncProtoView);
+    }
+
     if (nestedPVPromises.length > 0) {
       // Returns ProtoView Promise when there are any asynchronous nested ProtoViews.
       // The promise will resolved after nested ProtoViews are compiled.
@@ -162,7 +191,6 @@ export class Compiler {
       );
     }
 
-    // When there is no asynchronous nested ProtoViews, return the ProtoView
     return protoView;
   }
 

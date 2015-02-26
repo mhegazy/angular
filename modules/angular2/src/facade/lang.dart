@@ -1,6 +1,6 @@
 library angular.core.facade.lang;
 
-export 'dart:core' show Type, RegExp, print;
+export 'dart:core' show Type, RegExp, print, DateTime;
 import 'dart:math' as math;
 import 'dart:convert' as convert;
 
@@ -59,6 +59,10 @@ class StringWrapper {
     return s == s2;
   }
 
+  static String replace(String s, Pattern from, String replace) {
+    return s.replaceFirst(from, replace);
+  }
+
   static String replaceAll(String s, RegExp from, String replace) {
     return s.replaceAll(from, replace);
   }
@@ -91,6 +95,14 @@ class StringJoiner {
 }
 
 class NumberWrapper {
+  static String toFixed(num n, int fractionDigits) {
+    return n.toStringAsFixed(fractionDigits);
+  }
+
+  static bool equal(num a, num b) {
+    return a == b;
+  }
+
   static int parseIntAutoRadix(String text) {
     return int.parse(text);
   }
@@ -125,12 +137,22 @@ class RegExpWrapper {
 }
 
 class RegExpMatcherWrapper {
-  static Match next(Iterator<Match> matcher) {
+  static _JSLikeMatch next(Iterator<Match> matcher) {
     if (matcher.moveNext()) {
-      return matcher.current;
+      return new _JSLikeMatch(matcher.current);
     }
     return null;
   }
+}
+
+class _JSLikeMatch {
+  Match _m;
+
+  _JSLikeMatch(this._m);
+
+  String operator[](index) => _m[index];
+  int get index => _m.start;
+  int get length => _m.groupCount + 1;
 }
 
 class FunctionWrapper {
@@ -181,5 +203,14 @@ bool assertionsEnabled() {
 // Can't be all uppercase as our transpiler would think it is a special directive...
 class Json {
   static parse(String s) => convert.JSON.decode(s);
-  static stringify(data) => convert.JSON.encode(data);
+  static String stringify(data) => convert.JSON.encode(data);
+}
+
+class DateWrapper {
+  static DateTime fromMillis(int ms) {
+    return new DateTime.fromMillisecondsSinceEpoch(ms);
+  }
+  static DateTime now() {
+    return new DateTime.now();
+  }
 }

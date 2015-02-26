@@ -14,6 +14,9 @@ import {Decorator} from 'angular2/src/core/annotations/annotations';
 import {Template} from 'angular2/src/core/annotations/template';
 import {TemplateLoader} from 'angular2/src/core/compiler/template_loader';
 import {TemplateResolver} from 'angular2/src/core/compiler/template_resolver';
+import {UrlResolver} from 'angular2/src/core/compiler/url_resolver';
+import {StyleUrlResolver} from 'angular2/src/core/compiler/style_url_resolver';
+import {ComponentUrlMapper} from 'angular2/src/core/compiler/component_url_mapper';
 
 import {reflector} from 'angular2/src/reflection/reflection';
 import {getIntParameter, bindAction} from 'angular2/src/test_lib/benchmark_util';
@@ -28,31 +31,31 @@ function setupReflector() {
   reflector.registerType(Dir0, {
     "factory": () => new Dir0(),
     "parameters": [],
-    "annotations" : [new Decorator({selector: '[dir0]', bind: {'attr0': 'prop'}})]
+    "annotations" : [new Decorator({selector: '[dir0]', bind: {'prop': 'attr0'}})]
   });
 
   reflector.registerType(Dir1, {
     "factory": (dir0) => new Dir1(dir0),
     "parameters": [[Dir0]],
-    "annotations" : [new Decorator({selector: '[dir1]', bind: {'attr1': 'prop'}})]
+    "annotations" : [new Decorator({selector: '[dir1]', bind: {'prop': 'attr1'}})]
   });
 
   reflector.registerType(Dir2, {
     "factory": (dir1) => new Dir2(dir1),
     "parameters": [[Dir1]],
-    "annotations" : [new Decorator({selector: '[dir2]', bind: {'attr2': 'prop'}})]
+    "annotations" : [new Decorator({selector: '[dir2]', bind: {'prop': 'attr2'}})]
   });
 
   reflector.registerType(Dir3, {
     "factory": (dir2) => new Dir3(dir2),
     "parameters": [[Dir2]],
-    "annotations" : [new Decorator({selector: '[dir3]', bind: {'attr3': 'prop'}})]
+    "annotations" : [new Decorator({selector: '[dir3]', bind: {'prop': 'attr3'}})]
   });
 
   reflector.registerType(Dir4, {
     "factory": (dir3) => new Dir4(dir3),
     "parameters": [[Dir3]],
-    "annotations" : [new Decorator({selector: '[dir4]', bind: {'attr4': 'prop'}})]
+    "annotations" : [new Decorator({selector: '[dir4]', bind: {'prop': 'attr4'}})]
   });
 
   reflector.registerGetters({
@@ -83,8 +86,18 @@ export function main() {
   var reader = new DirectiveMetadataReader();
   var cache = new CompilerCache();
   var templateResolver = new FakeTemplateResolver();
-  var compiler = new Compiler(dynamicChangeDetection, new TemplateLoader(null),
-    reader, new Parser(new Lexer()), cache, new NativeShadowDomStrategy(), templateResolver);
+  var urlResolver = new UrlResolver();
+  var styleUrlResolver = new StyleUrlResolver(urlResolver);
+  var compiler = new Compiler(
+    dynamicChangeDetection,
+    new TemplateLoader(null, urlResolver),
+    reader,
+    new Parser(new Lexer()),
+    cache,
+    new NativeShadowDomStrategy(styleUrlResolver),
+    templateResolver,
+    new ComponentUrlMapper(),
+    urlResolver);
   var templateNoBindings = createTemplateHtml('templateNoBindings', count);
   var templateWithBindings = createTemplateHtml('templateWithBindings', count);
 
@@ -117,7 +130,7 @@ function createTemplateHtml(templateId, repeatCount) {
 @Decorator({
   selector: '[dir0]',
   bind: {
-    'attr0': 'prop'
+    'prop': 'attr0'
   }
 })
 class Dir0 {}
@@ -125,7 +138,7 @@ class Dir0 {}
 @Decorator({
   selector: '[dir1]',
   bind: {
-    'attr1': 'prop'
+    'prop': 'attr1'
   }
 })
 class Dir1 {
@@ -135,7 +148,7 @@ class Dir1 {
 @Decorator({
   selector: '[dir2]',
   bind: {
-    'attr2': 'prop'
+    'prop': 'attr2'
   }
 })
 class Dir2 {
@@ -145,7 +158,7 @@ class Dir2 {
 @Decorator({
   selector: '[dir3]',
   bind: {
-    'attr3': 'prop'
+    'prop': 'attr3'
   }
 })
 class Dir3 {
@@ -155,7 +168,7 @@ class Dir3 {
 @Decorator({
   selector: '[dir4]',
   bind: {
-    'attr4': 'prop'
+    'prop': 'attr4'
   }
 })
 class Dir4 {
