@@ -13,7 +13,7 @@ import {ListWrapper} from 'angular2/src/facade/collection';
 export class Foreach  {
   viewContainer: ViewContainer;
   constructor(viewContainer:ViewContainer) {
-    super();
+    //super();
     this.viewContainer = viewContainer;
   }
 

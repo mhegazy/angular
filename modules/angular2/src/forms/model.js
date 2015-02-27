@@ -148,7 +148,7 @@ export class OptionalControl {
   _cond:boolean;
 
   constructor(control:Control, cond:boolean) {
-    super();
+    //super();
     this._control = control;
     this._cond = cond;
   }
