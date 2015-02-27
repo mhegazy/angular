@@ -253,7 +253,7 @@ export function main() {
         var tplResolver = new FakeTemplateResolver();
         var urlResolver = new FakeUrlResolver();
         var tplLoader = new FakeTemplateLoader(urlResolver);
-        var template = new Template({inline: '<div></div>', url: '/tpl.html'});
+        var template = new TemplateAnnotation({inline: '<div></div>', url: '/tpl.html'});
         var cmpUrlMapper = new RuntimeComponentUrlMapper();
         cmpUrlMapper.setComponentUrl(MainComponent, '/cmp');
 
@@ -397,7 +397,7 @@ class FakeTemplateResolver extends TemplateResolver {
     }
 
     if (this._forceSync) return template;
-    if (this._forceAsync) return new Template({url: html});
+    if (this._forceAsync) return new TemplateAnnotation({url: html});
 
     throw 'No template';
   }

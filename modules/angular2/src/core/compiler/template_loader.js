@@ -50,12 +50,12 @@ export class TemplateLoader {
     throw new BaseException('Templates should have either their url or inline property set');
   }
 
-  setBaseUrl(template: Template, baseUrl: string) {
+  setBaseUrl(template: TemplateAnnotation, baseUrl: string) {
     MapWrapper.set(this._baseUrls, template, baseUrl);
     MapWrapper.delete(this._urlCache, template);
   }
 
-  getTemplateUrl(template: Template) {
+  getTemplateUrl(template: TemplateAnnotation) {
     if (!MapWrapper.contains(this._urlCache, template)) {
       var baseUrl = MapWrapper.get(this._baseUrls, template);
       if (isBlank(baseUrl)) {

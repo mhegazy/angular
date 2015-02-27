@@ -6,7 +6,7 @@ import {CompileElement} from 'angular2/src/core/compiler/pipeline/compile_elemen
 import {CompileStep} from 'angular2/src/core/compiler/pipeline/compile_step';
 import {CompileControl} from 'angular2/src/core/compiler/pipeline/compile_control';
 
-import {Component} from 'angular2/src/core/annotations/annotations';
+import {ComponentAnnotation} from 'angular2/src/core/annotations/annotations';
 import {DirectiveMetadata} from 'angular2/src/core/compiler/directive_metadata';
 import {ShadowDomStrategy} from 'angular2/src/core/compiler/shadow_dom_strategy';
 
@@ -16,7 +16,7 @@ import {DOM, Element} from 'angular2/src/facade/dom';
 export function main() {
   describe('ShimShadowDom', () => {
     function createPipeline(ignoreBindings: boolean) {
-      var annotation = new Component({selector: 'selector'});
+      var annotation = new ComponentAnnotation({selector: 'selector'});
       var meta = new DirectiveMetadata(SomeComponent, annotation);
       var shimShadowDom = new ShimShadowDom(meta, new FakeStrategy());
 

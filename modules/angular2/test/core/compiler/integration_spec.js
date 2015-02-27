@@ -128,7 +128,7 @@ export function main() {
 
       it("should support pipes in bindings and bind config", (done) => {
         tplResolver.setTemplate(MyComp,
-          new Template({
+          new TemplateAnnotation({
             inline: '<component-with-pipes #comp [prop]="ctxProp | double"></component-with-pipes>',
             directives: [ComponentWithPipes]
           }));
@@ -193,7 +193,7 @@ export function main() {
 
       it('should support directives where a binding attribute is not given', function(done) {
         tplResolver.setTemplate(MyComp,
-          new Template({
+          new TemplateAnnotation({
             // No attribute "el-prop" specified.
             inline: '<p my-dir></p>',
             directives: [MyDir]
@@ -338,7 +338,7 @@ export function main() {
       });
 
       it('should create a component that injects a @Parent', (done) => {
-        tplResolver.setTemplate(MyComp, new Template({
+        tplResolver.setTemplate(MyComp, new TemplateAnnotation({
           inline: '<some-directive><cmp-with-parent #child></cmp-with-parent></some-directive>',
           directives: [SomeDirective, CompWithParent]
         }));
@@ -354,7 +354,7 @@ export function main() {
       });
 
       it('should create a component that injects an @Ancestor', (done) => {
-        tplResolver.setTemplate(MyComp, new Template({
+        tplResolver.setTemplate(MyComp, new TemplateAnnotation({
           inline: `
             <some-directive>
               <p>
@@ -375,7 +375,7 @@ export function main() {
       });
 
       it('should create a component that injects an @Ancestor through viewport directive', (done) => {
-        tplResolver.setTemplate(MyComp, new Template({
+        tplResolver.setTemplate(MyComp, new TemplateAnnotation({
           inline: `
             <some-directive>
               <p *if="true">
@@ -402,7 +402,7 @@ export function main() {
     if (assertionsEnabled() && isJsObject({})) {
 
       function expectCompileError(inlineTpl, errMessage, done) {
-        tplResolver.setTemplate(MyComp, new Template({inline: inlineTpl}));
+        tplResolver.setTemplate(MyComp, new TemplateAnnotation({inline: inlineTpl}));
         compiler.compile(MyComp).then(() => {
           throw new BaseException("Test failure: should not have come here as an exception was expected");
         },(err) => {

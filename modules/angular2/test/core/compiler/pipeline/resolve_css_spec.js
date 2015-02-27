@@ -16,7 +16,7 @@ import {CompileElement} from 'angular2/src/core/compiler/pipeline/compile_elemen
 import {CompileStep} from 'angular2/src/core/compiler/pipeline/compile_step';
 import {CompileControl} from 'angular2/src/core/compiler/pipeline/compile_control';
 
-import {Component} from 'angular2/src/core/annotations/annotations';
+import {ComponentAnnotation} from 'angular2/src/core/annotations/annotations';
 import {DirectiveMetadata} from 'angular2/src/core/compiler/directive_metadata';
 import {ShadowDomStrategy} from 'angular2/src/core/compiler/shadow_dom_strategy';
 import {ProtoView} from 'angular2/src/core/compiler/view';
@@ -28,7 +28,7 @@ import {PromiseWrapper} from 'angular2/src/facade/async';
 export function main() {
   describe('ResolveCss', () => {
     function createPipeline(strategy:ShadowDomStrategy) {
-      var annotation = new Component({selector: 'selector'});
+      var annotation = new ComponentAnnotation({selector: 'selector'});
       var meta = new DirectiveMetadata(SomeComponent, annotation);
       var resolveCss = new ResolveCss(meta, strategy, 'http://base');
       return new CompilePipeline([

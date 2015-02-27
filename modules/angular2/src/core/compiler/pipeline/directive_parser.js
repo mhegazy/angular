@@ -118,7 +118,7 @@ function updateMatchedProperties(matchedProperties, selector, directive) {
 
 // check if the directive is compatible with the current element
 function checkDirectiveValidity(directive, current, isTemplateElement) {
-  if (directive.annotation instanceof Viewport) {
+  if (directive.annotation instanceof ViewportAnnotation) {
     if (!isTemplateElement) {
       throw new BaseException(`Viewport directives need to be placed on <template> elements or elements ` +
          `with template attribute - check ${current.elementDescription}`);
@@ -127,7 +127,7 @@ function checkDirectiveValidity(directive, current, isTemplateElement) {
     }
   } else if (isTemplateElement) {
     throw new BaseException(`Only template directives are allowed on template elements - check ${current.elementDescription}`);
-  } else if ((directive.annotation instanceof Component) && isPresent(current.componentDirective)) {
+  } else if ((directive.annotation instanceof ComponentAnnotation) && isPresent(current.componentDirective)) {
     throw new BaseException(`Multiple component directives not allowed on the same element - check ${current.elementDescription}`);
   }
 }
