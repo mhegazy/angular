@@ -8,14 +8,16 @@ import {PromiseWrapper} from 'angular2/src/facade/async';
 import {Compiler, CompilerCache} from 'angular2/src/core/compiler/compiler';
 import {ProtoView} from 'angular2/src/core/compiler/view';
 import {DirectiveMetadataReader} from 'angular2/src/core/compiler/directive_metadata_reader';
-import {DirectiveMetadata} from 'angular2/src/core/compiler/directive_metadata';
 import {Component} from 'angular2/src/core/annotations/annotations';
-import {Template, TemplateAnnotation} from 'angular2/src/core/annotations/template';
+import {Template} from 'angular2/src/core/annotations/template';
 import {CompileElement} from 'angular2/src/core/compiler/pipeline/compile_element';
 import {CompileStep} from 'angular2/src/core/compiler/pipeline/compile_step'
 import {CompileControl} from 'angular2/src/core/compiler/pipeline/compile_control';
 import {TemplateLoader} from 'angular2/src/core/compiler/template_loader';
 import {TemplateResolver} from 'angular2/src/core/compiler/template_resolver';
+import {ComponentUrlMapper, RuntimeComponentUrlMapper} from 'angular2/src/core/compiler/component_url_mapper';
+import {UrlResolver} from 'angular2/src/core/compiler/url_resolver';
+import {StyleUrlResolver} from 'angular2/src/core/compiler/style_url_resolver';
 
 import {Lexer, Parser, dynamicChangeDetection} from 'angular2/change_detection';
 import {ShadowDomStrategy, NativeShadowDomStrategy} from 'angular2/src/core/compiler/shadow_dom_strategy';
@@ -42,7 +44,10 @@ export function main() {
 
         function createCompiler(processClosure) {
           var steps = [new MockStep(processClosure)];
-          return new TestableCompiler(reader, steps, new FakeTemplateLoader(), tplResolver);
+          var urlResolver = new FakeUrlResolver();
+          var tplLoader =  new FakeTemplateLoader(urlResolver);
+          return new TestableCompiler(reader, steps,tplLoader, tplResolver,
+            urlResolver, new ComponentUrlMapper());
         }
 
         it('should run the steps and return the ProtoView of the root element', (done) => {
@@ -50,7 +55,7 @@ export function main() {
           var compiler = createCompiler( (parent, current, control) => {
             current.inheritedProtoView = rootProtoView;
           });
-          tplResolver.setTemplate(MainComponent, new TemplateAnnotation({inline: '<div></div>'}));
+          tplResolver.setTemplate(MainComponent, new Template({inline: '<div></div>'}));
           compiler.compile(MainComponent).then( (protoView) => {
             expect(protoView).toBe(rootProtoView);
             done();
@@ -67,6 +72,32 @@ export function main() {
           });
         });
 
+        it('should wait for async styles to be resolved', (done) => {
+          var styleResolved = false;
+
+          var completer = PromiseWrapper.completer();
+
+          var compiler = createCompiler( (parent, current, control) => {
+            var protoView = new ProtoView(current.element, null, null);
+            ListWrapper.push(protoView.stylePromises, completer.promise.then((_) => {
+              styleResolved = true;
+            }));
+            current.inheritedProtoView = protoView;
+          });
+
+          // It should always return a Promise because the style is async
+          var pvPromise = compiler.compile(MainComponent);
+          expect(pvPromise).toBePromise();
+          expect(styleResolved).toEqual(false);
+
+          // The Promise should resolve after the style is ready
+          completer.resolve(null);
+          pvPromise.then((protoView) => {
+            expect(styleResolved).toEqual(true);
+            done();
+          });
+        });
+
         it('should load nested components', (done) => {
           var compiler = createCompiler( (parent, current, control) => {
             if (DOM.hasClass(current.element, 'nested')) {
@@ -77,7 +108,7 @@ export function main() {
               current.inheritedProtoView = new ProtoView(current.element, null, null);
             }
           });
-          tplResolver.setTemplate(MainComponent, new TemplateAnnotation({inline: '<div class="nested"></div>'}));
+          tplResolver.setTemplate(MainComponent, new Template({inline: '<div class="nested"></div>'}));
           compiler.compile(MainComponent).then( (protoView) => {
             var nestedView = protoView.elementBinders[0].nestedProtoView;
             expect(DOM.getInnerHTML(nestedView.element)).toEqual('nested component');
@@ -90,7 +121,7 @@ export function main() {
             current.inheritedProtoView = new ProtoView(current.element, null, null);
           });
           var firstProtoView;
-          tplResolver.setTemplate(MainComponent, new TemplateAnnotation({inline: '<div></div>'}));
+          tplResolver.setTemplate(MainComponent, new Template({inline: '<div></div>'}));
           compiler.compile(MainComponent).then( (protoView) => {
             firstProtoView = protoView;
             return compiler.compile(MainComponent);
@@ -103,15 +134,15 @@ export function main() {
         it('should re-use components being compiled', (done) => {
           var nestedElBinders = [];
           var compiler = createCompiler( (parent, current, control) => {
+            current.inheritedProtoView = new ProtoView(current.element, null, null);
             if (DOM.hasClass(current.element, 'nested')) {
-              current.inheritedProtoView = new ProtoView(current.element, null, null);
               current.inheritedElementBinder = current.inheritedProtoView.bindElement(null);
               current.componentDirective = reader.read(NestedComponent);
               ListWrapper.push(nestedElBinders, current.inheritedElementBinder);
             }
           });
           tplResolver.setTemplate(MainComponent,
-            new TemplateAnnotation({inline: '<div><div class="nested"></div><div class="nested"></div></div>'}));
+            new Template({inline: '<div><div class="nested"></div><div class="nested"></div></div>'}));
           compiler.compile(MainComponent).then( (protoView) => {
             expect(nestedElBinders[0].nestedProtoView).toBe(nestedElBinders[1].nestedProtoView);
             done();
@@ -135,9 +166,12 @@ export function main() {
     describe('(mixed async, sync TemplateLoader)', () => {
       var reader = new DirectiveMetadataReader();
 
-      function createCompiler(processClosure, resolver: TemplateResolver) {
+      function createCompiler(processClosure, templateResolver: TemplateResolver) {
         var steps = [new MockStep(processClosure)];
-        return new TestableCompiler(reader, steps, new FakeTemplateLoader(), resolver);
+        var urlResolver = new FakeUrlResolver();
+        var tplLoader = new FakeTemplateLoader(urlResolver);
+        return new TestableCompiler(reader, steps, tplLoader, templateResolver,
+          urlResolver, new ComponentUrlMapper());
       }
 
       function createNestedComponentSpec(name, resolver: TemplateResolver, error:string = null) {
@@ -168,46 +202,71 @@ export function main() {
         });
       }
 
-      var resolver = new FakeTemplateResolver();
-      resolver.setSync(ParentComponent);
-      resolver.setSync(NestedComponent);
-      createNestedComponentSpec('(sync -> sync)', resolver);
+      var templateResolver = new FakeTemplateResolver();
+      templateResolver.setSync(ParentComponent);
+      templateResolver.setSync(NestedComponent);
+      createNestedComponentSpec('(sync -> sync)', templateResolver);
 
-      resolver = new FakeTemplateResolver();
-      resolver.setAsync(ParentComponent);
-      resolver.setSync(NestedComponent);
-      createNestedComponentSpec('(async -> sync)', resolver);
+      templateResolver = new FakeTemplateResolver();
+      templateResolver.setAsync(ParentComponent);
+      templateResolver.setSync(NestedComponent);
+      createNestedComponentSpec('(async -> sync)', templateResolver);
 
-      resolver = new FakeTemplateResolver();
-      resolver.setSync(ParentComponent);
-      resolver.setAsync(NestedComponent);
-      createNestedComponentSpec('(sync -> async)', resolver);
+      templateResolver = new FakeTemplateResolver();
+      templateResolver.setSync(ParentComponent);
+      templateResolver.setAsync(NestedComponent);
+      createNestedComponentSpec('(sync -> async)', templateResolver);
 
-      resolver = new FakeTemplateResolver();
-      resolver.setAsync(ParentComponent);
-      resolver.setAsync(NestedComponent);
-      createNestedComponentSpec('(async -> async)', resolver);
+      templateResolver = new FakeTemplateResolver();
+      templateResolver.setAsync(ParentComponent);
+      templateResolver.setAsync(NestedComponent);
+      createNestedComponentSpec('(async -> async)', templateResolver);
 
-      resolver = new FakeTemplateResolver();
-      resolver.setError(ParentComponent);
-      resolver.setSync(NestedComponent);
-      createNestedComponentSpec('(error -> sync)', resolver,
+      templateResolver = new FakeTemplateResolver();
+      templateResolver.setError(ParentComponent);
+      templateResolver.setSync(NestedComponent);
+      createNestedComponentSpec('(error -> sync)', templateResolver,
         'Failed to load the template for ParentComponent');
 
       // TODO(vicb): Check why errors this fails with Dart
       // TODO(vicb): The Promise is rejected with the correct error but an exc is thrown before
-      //resolver = new FakeTemplateResolver();
-      //resolver.setSync(ParentComponent);
-      //resolver.setError(NestedComponent);
-      //createNestedComponentSpec('(sync -> error)', resolver,
+      //templateResolver = new FakeTemplateResolver();
+      //templateResolver.setSync(ParentComponent);
+      //templateResolver.setError(NestedComponent);
+      //createNestedComponentSpec('(sync -> error)', templateResolver,
       //  'Failed to load the template for NestedComponent -> Failed to compile ParentComponent');
       //
-      //resolver = new FakeTemplateResolver();
-      //resolver.setAsync(ParentComponent);
-      //resolver.setError(NestedComponent);
-      //createNestedComponentSpec('(async -> error)', resolver,
+      //templateResolver = new FakeTemplateResolver();
+      //templateResolver.setAsync(ParentComponent);
+      //templateResolver.setError(NestedComponent);
+      //createNestedComponentSpec('(async -> error)', templateResolver,
       //  'Failed to load the template for NestedComponent -> Failed to compile ParentComponent');
 
+    });
+
+    describe('URL resolution', () => {
+      it('should resolve template URLs by combining application, component and template URLs', (done) => {
+        var steps = [new MockStep((parent, current, control) => {
+          current.inheritedProtoView = new ProtoView(current.element, null, null);
+        })];
+        var reader = new DirectiveMetadataReader();
+        var tplResolver = new FakeTemplateResolver();
+        var urlResolver = new FakeUrlResolver();
+        var tplLoader = new FakeTemplateLoader(urlResolver);
+        var template = new Template({inline: '<div></div>', url: '/tpl.html'});
+        var cmpUrlMapper = new RuntimeComponentUrlMapper();
+        cmpUrlMapper.setComponentUrl(MainComponent, '/cmp');
+
+        var compiler = new TestableCompiler(reader, steps, tplLoader, tplResolver,
+          urlResolver, cmpUrlMapper);
+
+        tplResolver.forceSync();
+        tplResolver.setTemplate(MainComponent, template);
+        compiler.compile(MainComponent).then((protoView) => {
+          expect(tplLoader.getTemplateUrl(template)).toEqual('http://www.app.com/cmp/tpl.html');
+          done();
+        });
+      })
     });
   });
 }
@@ -232,13 +291,21 @@ class TestableCompiler extends Compiler {
   steps:List<any>;
 
   constructor(reader:DirectiveMetadataReader, steps:List<CompileStep>, loader: TemplateLoader,
-    resolver: TemplateResolver) {
-    super(dynamicChangeDetection, loader, reader, new Parser(new Lexer()), new CompilerCache(),
-          new NativeShadowDomStrategy(), resolver);
+    templateResolver: TemplateResolver, urlResolver: UrlResolver, cmpUrlMapper: ComponentUrlMapper) {
+    super(dynamicChangeDetection,
+          loader,
+          reader,
+          new Parser(new Lexer()),
+          new CompilerCache(),
+          new NativeShadowDomStrategy(new StyleUrlResolver(urlResolver)),
+          templateResolver,
+          cmpUrlMapper,
+          urlResolver);
+
     this.steps = steps;
   }
 
-  createSteps(component:Type, template: TemplateAnnotation):List<CompileStep> {
+  createSteps(component:Type, template: Template):List<CompileStep> {
     return this.steps;
   }
 }
@@ -254,9 +321,23 @@ class MockStep extends CompileStep {
   }
 }
 
-class FakeTemplateLoader extends TemplateLoader {
+class FakeUrlResolver extends UrlResolver {
   constructor() {
-    super(null);
+    super();
+  }
+
+  resolve(baseUrl: string, url: string): string {
+    if (baseUrl === null && url == './') {
+      return 'http://www.app.com';
+    };
+
+    return baseUrl + url;
+  }
+}
+
+class FakeTemplateLoader extends TemplateLoader {
+  constructor(urlResolver: UrlResolver) {
+    super(null, urlResolver);
   }
 
   load(template: TemplateAnnotation): HTMLTemplateElement | Promise<HTMLTemplateElement> {
@@ -291,7 +372,7 @@ class FakeTemplateResolver extends TemplateResolver {
     this._cmpTemplates = MapWrapper.create();
   }
 
-  resolve(component: Type): TemplateAnnotation {
+  resolve(component: Type): Template {
     var template = MapWrapper.get(this._cmpTemplates, component);
     if (isBlank(template)) {
       template = super.resolve(component);
@@ -304,19 +385,19 @@ class FakeTemplateResolver extends TemplateResolver {
     }
 
     if (ListWrapper.contains(this._errorCmp, component)) {
-      return new TemplateAnnotation({url: null, inline: null});
+      return new Template({url: null, inline: null});
     }
 
     if (ListWrapper.contains(this._syncCmp, component)) {
-      return new TemplateAnnotation({inline: html});
+      return template;
     }
 
     if (ListWrapper.contains(this._asyncCmp, component)) {
-      return new TemplateAnnotation({url: html});
+      return new Template({url: html});
     }
 
-    if (this._forceSync) return new TemplateAnnotation({inline: html});
-    if (this._forceAsync) return new TemplateAnnotation({url: html});
+    if (this._forceSync) return template;
+    if (this._forceAsync) return new Template({url: html});
 
     throw 'No template';
   }
@@ -343,7 +424,7 @@ class FakeTemplateResolver extends TemplateResolver {
     ListWrapper.push(this._errorCmp, component);
   }
 
-  setTemplate(component: Type, template: TemplateAnnotation) {
+  setTemplate(component: Type, template: Template) {
     MapWrapper.set(this._cmpTemplates, component, template);
   }
 }

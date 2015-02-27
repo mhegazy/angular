@@ -9,20 +9,26 @@ import {
   WebDriverAdapter, Injector, bind
 } from 'benchpress/benchpress';
 
+import { TraceEventFactory } from '../trace_event_factory';
+
 export function main() {
   describe('chrome driver extension', () => {
     var log;
     var extension;
 
-    function createExtension(perfRecords = null) {
+    var blinkEvents = new TraceEventFactory('blink.console', 'pid0');
+    var chromeTimelineEvents = new TraceEventFactory('disabled-by-default-devtools.timeline', 'pid0');
+    var normEvents = new TraceEventFactory('timeline', 'pid0');
+
+    function createExtension(perfRecords = null, messageMethod = 'Tracing.dataCollected') {
       if (isBlank(perfRecords)) {
         perfRecords = [];
       }
       log = [];
       extension = new Injector([
         ChromeDriverExtension.BINDINGS,
-        bind(WebDriverAdapter).toValue(new MockDriverAdapter(log, perfRecords))
-      ]).get(WebDriverExtension);
+        bind(WebDriverAdapter).toValue(new MockDriverAdapter(log, perfRecords, messageMethod))
+      ]).get(ChromeDriverExtension);
       return extension;
     }
 
@@ -33,23 +39,23 @@ export function main() {
       });
     });
 
-    it('should mark the timeline via console.timeStamp()', (done) => {
+    it('should mark the timeline via console.time()', (done) => {
       createExtension().timeBegin('someName').then( (_) => {
-        expect(log).toEqual([['executeScript', `console.timeStamp('begin_someName');`]]);
+        expect(log).toEqual([['executeScript', `console.time('someName');`]]);
         done();
       });
     });
 
     it('should mark the timeline via console.timeEnd()', (done) => {
       createExtension().timeEnd('someName').then( (_) => {
-        expect(log).toEqual([['executeScript', `console.timeStamp('end_someName');`]]);
+        expect(log).toEqual([['executeScript', `console.timeEnd('someName');`]]);
         done();
       });
     });
 
     it('should mark the timeline via console.time() and console.timeEnd()', (done) => {
       createExtension().timeEnd('name1', 'name2').then( (_) => {
-        expect(log).toEqual([['executeScript', `console.timeStamp('end_name1');console.timeStamp('begin_name2');`]]);
+        expect(log).toEqual([['executeScript', `console.timeEnd('name1');console.time('name2');`]]);
         done();
       });
     });
@@ -66,13 +72,34 @@ export function main() {
         });
       });
 
-      it('should report FunctionCall records as "script"', (done) => {
+      it('should normalize times to ms and forward ph and pid event properties', (done) => {
         createExtension([
-          durationRecord('FunctionCall', 1, 5)
+          chromeTimelineEvents.complete('FunctionCall', 1100, 5500, null)
         ]).readPerfLog().then( (events) => {
           expect(events).toEqual([
-            startEvent('script', 1),
-            endEvent('script', 5)
+            normEvents.complete('script', 1.1, 5.5, null),
+          ]);
+          done();
+        });
+      });
+
+      it('should normalize "tdur" to "dur"', (done) => {
+        var event = chromeTimelineEvents.create('X', 'FunctionCall', 1100, null);
+        event['tdur'] = 5500;
+        createExtension([event]).readPerfLog().then( (events) => {
+          expect(events).toEqual([
+            normEvents.complete('script', 1.1, 5.5, null),
+          ]);
+          done();
+        });
+      });
+
+      it('should report FunctionCall events as "script"', (done) => {
+        createExtension([
+          chromeTimelineEvents.start('FunctionCall', 0)
+        ]).readPerfLog().then( (events) => {
+          expect(events).toEqual([
+            normEvents.start('script', 0),
           ]);
           done();
         });
@@ -80,7 +107,7 @@ export function main() {
 
       it('should ignore FunctionCalls from webdriver', (done) => {
         createExtension([
-          internalScriptRecord(1, 5)
+          chromeTimelineEvents.start('FunctionCall', 0, {'data': {'scriptName': 'InjectedScript'}})
         ]).readPerfLog().then( (events) => {
           expect(events).toEqual([]);
           done();
@@ -89,10 +116,10 @@ export function main() {
 
       it('should report begin timestamps', (done) => {
         createExtension([
-          timeStampRecord('begin_someName')
+          blinkEvents.create('S', 'someName', 1000)
         ]).readPerfLog().then( (events) => {
           expect(events).toEqual([
-            markStartEvent('someName')
+            normEvents.markStart('someName', 1.0)
           ]);
           done();
         });
@@ -100,10 +127,10 @@ export function main() {
 
       it('should report end timestamps', (done) => {
         createExtension([
-          timeStampRecord('end_someName')
+          blinkEvents.create('F', 'someName', 1000)
         ]).readPerfLog().then( (events) => {
           expect(events).toEqual([
-            markEndEvent('someName')
+            normEvents.markEnd('someName', 1.0)
           ]);
           done();
         });
@@ -111,44 +138,51 @@ export function main() {
 
       it('should report gc', (done) => {
         createExtension([
-          gcRecord(1, 3, 21)
+          chromeTimelineEvents.start('GCEvent', 1000, {'usedHeapSizeBefore': 1000}),
+          chromeTimelineEvents.end('GCEvent', 2000, {'usedHeapSizeAfter': 0}),
         ]).readPerfLog().then( (events) => {
           expect(events).toEqual([
-            startEvent('gc', 1),
-            endEvent('gc', 3, {'amount': 21}),
+            normEvents.start('gc', 1.0, {'usedHeapSize': 1000}),
+            normEvents.end('gc', 2.0, {'usedHeapSize': 0}),
           ]);
           done();
         });
       });
 
       ['RecalculateStyles', 'Layout', 'UpdateLayerTree', 'Paint', 'Rasterize', 'CompositeLayers'].forEach( (recordType) => {
-        it(`should report ${recordType}`, (done) => {
+        it(`should report ${recordType} as "render"`, (done) => {
           createExtension([
-            durationRecord(recordType, 0, 1)
+            chromeTimelineEvents.start(recordType, 1234),
+            chromeTimelineEvents.end(recordType, 2345)
           ]).readPerfLog().then( (events) => {
             expect(events).toEqual([
-              startEvent('render', 0),
-              endEvent('render', 1),
+              normEvents.start('render', 1.234),
+              normEvents.end('render', 2.345),
             ]);
             done();
           });
         });
       });
 
-
-      it('should walk children', (done) => {
-        createExtension([
-          durationRecord('FunctionCall', 1, 5, [
-            timeStampRecord('begin_someName')
-          ])
-        ]).readPerfLog().then( (events) => {
-          expect(events).toEqual([
-            startEvent('script', 1),
-            markStartEvent('someName'),
-            endEvent('script', 5)
-          ]);
+      it('should throw an error on buffer overflow', (done) => {
+        PromiseWrapper.catchError(createExtension([
+          chromeTimelineEvents.start('FunctionCall', 1234),
+        ], 'Tracing.bufferUsage').readPerfLog(), (err) => {
+          expect( () => {
+            throw err;
+          }).toThrowError('The DevTools trace buffer filled during the test!');
           done();
         });
+      });
+
+      it('should match chrome browsers', () => {
+        expect(createExtension().supports({
+          'browserName': 'chrome'
+        })).toBe(true);
+
+        expect(createExtension().supports({
+          'browserName': 'Chrome'
+        })).toBe(true);
       });
 
     });
@@ -156,87 +190,15 @@ export function main() {
   });
 }
 
-function timeStampRecord(name) {
-  return {
-    'type': 'TimeStamp',
-    'data': {
-      'message': name
-    }
-  };
-}
-
-function durationRecord(type, startTime, endTime, children = null) {
-  if (isBlank(children)) {
-    children = [];
-  }
-  return {
-    'type': type,
-    'startTime': startTime,
-    'endTime': endTime,
-    'children': children
-  };
-}
-
-function internalScriptRecord(startTime, endTime) {
-  return {
-    'type': 'FunctionCall',
-    'startTime': startTime,
-    'endTime': endTime,
-    'data': {
-      'scriptName': 'InjectedScript'
-    }
-  };
-}
-
-function gcRecord(startTime, endTime, gcAmount) {
-  return {
-    'type': 'GCEvent',
-    'startTime': startTime,
-    'endTime': endTime,
-    'data': {
-      'usedHeapSizeDelta': gcAmount
-    }
-  };
-}
-
-function markStartEvent(type) {
-  return {
-    'name': type,
-    'ph': 'b'
-  }
-}
-
-function markEndEvent(type) {
-  return {
-    'name': type,
-    'ph': 'e'
-  }
-}
-
-function startEvent(type, time) {
-  return {
-    'name': type,
-    'ts': time,
-    'ph': 'B'
-  }
-}
-
-function endEvent(type, time, args = null) {
-  return {
-    'name': type,
-    'ts': time,
-    'ph': 'E',
-    'args': args
-  }
-}
-
 class MockDriverAdapter extends WebDriverAdapter {
   _log:List<any>;
-  _perfRecords:List<any>;
-  constructor(log, perfRecords) {
+  _events:List<any>;
+  _messageMethod:string;
+  constructor(log, events, messageMethod) {
     super();
     this._log = log;
-    this._perfRecords = perfRecords;
+    this._events = events;
+    this._messageMethod = messageMethod;
   }
 
   executeScript(script) {
@@ -247,14 +209,12 @@ class MockDriverAdapter extends WebDriverAdapter {
   logs(type) {
     ListWrapper.push(this._log, ['logs', type]);
     if (type === 'performance') {
-      return PromiseWrapper.resolve(this._perfRecords.map(function(record) {
+      return PromiseWrapper.resolve(this._events.map( (event) => {
         return {
           'message': Json.stringify({
             'message': {
-              'method': 'Timeline.eventRecorded',
-              'params': {
-                'record': record
-              }
+              'method': this._messageMethod,
+              'params': event
             }
           })
         };

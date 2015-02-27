@@ -1,6 +1,6 @@
-import { isPresent, isBlank } from 'angular2/src/facade/lang';
+import { isPresent, isBlank, Date, DateWrapper } from 'angular2/src/facade/lang';
 import { Promise, PromiseWrapper } from 'angular2/src/facade/async';
-import { StringMapWrapper, List, ListWrapper } from 'angular2/src/facade/collection';
+import { StringMapWrapper, StringMap, List, ListWrapper } from 'angular2/src/facade/collection';
 import { bind, OpaqueToken } from 'angular2/di';
 
 import { Metric } from './metric';
@@ -10,6 +10,7 @@ import { WebDriverExtension } from './web_driver_extension';
 import { WebDriverAdapter } from './web_driver_adapter';
 
 import { Options } from './sample_options';
+import { MeasureValues} from './measure_values';
 
 import {Binding} from 'angular2/di';
 export {Binding} from 'angular2/di';
@@ -24,6 +25,8 @@ export {Binding} from 'angular2/di';
 export class Sampler {
   // TODO(tbosch): use static values when our transpiler supports them
   static get BINDINGS() { return _BINDINGS; }
+  // TODO(tbosch): use static values when our transpiler supports them
+  static get TIME() { return _TIME; }
 
   _driver:WebDriverAdapter;
   _driverExtension:WebDriverExtension;
@@ -33,9 +36,10 @@ export class Sampler {
   _forceGc:boolean;
   _prepare:Function;
   _execute:Function;
+  _time:Function;
 
   constructor({
-    driver, driverExtension, metric, reporter, validator, forceGc, prepare, execute
+    driver, driverExtension, metric, reporter, validator, forceGc, prepare, execute, time
   }: any /*{
     // should be
     driver?: WebDriverAdapter,
@@ -50,6 +54,7 @@ export class Sampler {
     this._forceGc = forceGc;
     this._prepare = prepare;
     this._execute = execute;
+    this._time = time;
   }
 
   sample():Promise<SampleState> {
@@ -93,10 +98,11 @@ export class Sampler {
       .then( (measureValues) => this._report(lastState, measureValues) );
   }
 
-  _report(state:SampleState, measuredValues:any):Promise<SampleState> {
-    var completeSample = ListWrapper.concat(state.completeSample, [measuredValues]);
+  _report(state:SampleState, metricValues:StringMap):Promise<SampleState> {
+    var measureValues = new MeasureValues(state.completeSample.length, this._time(), metricValues);
+    var completeSample = ListWrapper.concat(state.completeSample, [measureValues]);
     var validSample = this._validator.validate(completeSample);
-    var resultPromise = this._reporter.reportMeasureValues(completeSample.length - 1, measuredValues);
+    var resultPromise = this._reporter.reportMeasureValues(measureValues);
     if (isPresent(validSample)) {
       resultPromise = resultPromise.then( (_) => this._reporter.reportSample(completeSample, validSample) )
     }
@@ -115,9 +121,11 @@ export class SampleState {
   }
 }
 
+var _TIME = new OpaqueToken('Sampler.time');
+
 var _BINDINGS = [
   bind(Sampler).toFactory(
-    (driver, driverExtension, metric, reporter, validator, forceGc, prepare, execute) => new Sampler({
+    (driver, driverExtension, metric, reporter, validator, forceGc, prepare, execute, time) => new Sampler({
       driver: driver,
       driverExtension: driverExtension,
       reporter: reporter,
@@ -128,10 +136,12 @@ var _BINDINGS = [
       // Mostly because the cache would have to be initialized with a
       // special null object, which is expensive.
       prepare: prepare !== false ? prepare : null,
-      execute: execute
+      execute: execute,
+      time: time
     }),
-    [WebDriverAdapter, WebDriverExtension, Metric, Reporter, Validator, Options.FORCE_GC, Options.PREPARE, Options.EXECUTE]
+    [WebDriverAdapter, WebDriverExtension, Metric, Reporter, Validator, Options.FORCE_GC, Options.PREPARE, Options.EXECUTE, _TIME]
   ),
   bind(Options.FORCE_GC).toValue(false),
-  bind(Options.PREPARE).toValue(false)
+  bind(Options.PREPARE).toValue(false),
+  bind(_TIME).toValue( () => DateWrapper.now() )
 ];

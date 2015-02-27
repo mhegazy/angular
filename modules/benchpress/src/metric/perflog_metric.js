@@ -1,6 +1,6 @@
 import { PromiseWrapper, Promise } from 'angular2/src/facade/async';
-import { isPresent, isBlank, int, BaseException, StringWrapper } from 'angular2/src/facade/lang';
-import { ListWrapper } from 'angular2/src/facade/collection';
+import { isPresent, isBlank, int, BaseException, StringWrapper, Math } from 'angular2/src/facade/lang';
+import { ListWrapper, StringMap, StringMapWrapper } from 'angular2/src/facade/collection';
 import { bind, OpaqueToken } from 'angular2/di';
 
 import { WebDriverExtension } from '../web_driver_extension';
@@ -31,14 +31,14 @@ export class PerflogMetric extends Metric {
     this._setTimeout = setTimeout;
   }
 
-  describe() {
+  describe():StringMap {
     return {
       'script': 'script execution time in ms',
       'render': 'render time in ms',
       'gcTime': 'gc time in ms',
-      'gcAmount': 'gc amount in bytes',
+      'gcAmount': 'gc amount in kbytes',
       'gcTimeInScript': 'gc time during script execution in ms',
-      'gcAmountInScript': 'gc amount during script execution in bytes'
+      'gcAmountInScript': 'gc amount during script execution in kbytes'
     };
   }
 
@@ -53,12 +53,12 @@ export class PerflogMetric extends Metric {
       .then( (_) => this._readUntilEndMark(markName) );
   }
 
-  _readUntilEndMark(markName:string, loopCount:int = 0) {
+  _readUntilEndMark(markName:string, loopCount:int = 0, startEvent = null) {
+    if (loopCount > _MAX_RETRY_COUNT) {
+      throw new BaseException(`Tried too often to get the ending mark: ${loopCount}`);
+    }
     return this._driverExtension.readPerfLog().then( (events) => {
-      this._remainingEvents = ListWrapper.concat(this._remainingEvents, events);
-      if (loopCount > _MAX_RETRY_COUNT) {
-        throw new BaseException(`Tried too often to get the ending mark: ${loopCount}`);
-      }
+      this._addEvents(events);
       var result = this._aggregateEvents(
         this._remainingEvents, markName
       );
@@ -68,11 +68,44 @@ export class PerflogMetric extends Metric {
       }
       var completer = PromiseWrapper.completer();
       this._setTimeout(
-        () => completer.complete(this._readUntilEndMark(markName, loopCount+1)),
+        () => completer.resolve(this._readUntilEndMark(markName, loopCount+1)),
         100
       );
       return completer.promise;
     });
+  }
+
+  _addEvents(events) {
+    var needSort = false;
+    ListWrapper.forEach(events, (event) => {
+      if (StringWrapper.equals(event['ph'], 'X')) {
+        needSort = true;
+        var startEvent = {};
+        var endEvent = {};
+        StringMapWrapper.forEach(event, (value, prop) => {
+          startEvent[prop] = value;
+          endEvent[prop] = value;
+        });
+        startEvent['ph'] = 'B';
+        endEvent['ph'] = 'E';
+        endEvent['ts'] = startEvent['ts'] + startEvent['dur'];
+        ListWrapper.push(this._remainingEvents, startEvent);
+        ListWrapper.push(this._remainingEvents, endEvent);
+      } else {
+        ListWrapper.push(this._remainingEvents, event);
+      }
+    });
+    if (needSort) {
+      // Need to sort because of the ph==='X' events
+      ListWrapper.sort(this._remainingEvents, (a,b) => {
+        var diff = a['ts'] - b['ts'];
+        return diff > 0
+            ? 1
+            : diff < 0
+                ? -1
+                : 0;
+      });
+    }
   }
 
   _aggregateEvents(events, markName) {
@@ -85,49 +118,40 @@ export class PerflogMetric extends Metric {
       'gcAmountInScript': 0
     };
 
-    var startMarkFound = false;
-    var endMarkFound = false;
-    if (isBlank(markName)) {
-      startMarkFound = true;
-      endMarkFound = true;
-    }
+    var markStartEvent = null;
+    var markEndEvent = null;
 
     var intervalStarts = {};
     events.forEach( (event) => {
       var ph = event['ph'];
       var name = event['name'];
-      var ts = event['ts'];
-      var args = event['args'];
       if (StringWrapper.equals(ph, 'b') && StringWrapper.equals(name, markName)) {
-        startMarkFound = true;
+        markStartEvent = event;
       } else if (StringWrapper.equals(ph, 'e') && StringWrapper.equals(name, markName)) {
-        endMarkFound = true;
+        markEndEvent = event;
       }
-      if (startMarkFound && !endMarkFound) {
+      if (isPresent(markStartEvent) && isBlank(markEndEvent) && event['pid'] === markStartEvent['pid']) {
         if (StringWrapper.equals(ph, 'B')) {
-          intervalStarts[name] = ts;
+          intervalStarts[name] = event;
         } else if (StringWrapper.equals(ph, 'E') && isPresent(intervalStarts[name])) {
-          var diff = ts - intervalStarts[name];
+          var startEvent = intervalStarts[name];
+          var duration = event['ts'] - startEvent['ts'];
           intervalStarts[name] = null;
           if (StringWrapper.equals(name, 'gc')) {
-            result['gcTime'] += diff;
-            var gcAmount = 0;
-            if (isPresent(args)) {
-              gcAmount = args['amount'];
-            }
-            result['gcAmount'] += gcAmount;
+            result['gcTime'] += duration;
+            result['gcAmount'] += (startEvent['args']['usedHeapSize'] - event['args']['usedHeapSize']) / 1000;
             if (isPresent(intervalStarts['script'])) {
-              result['gcTimeInScript'] += diff;
-              result['gcAmountInScript'] += gcAmount;
+              result['gcTimeInScript'] += duration;
+              result['gcAmountInScript'] += result['gcAmount'];
             }
           } else {
-            result[name] += diff;
+            result[name] += duration;
           }
         }
       }
     });
     result['script'] -= result['gcTimeInScript'];
-    return startMarkFound && endMarkFound ? result : null;
+    return isPresent(markStartEvent) && isPresent(markEndEvent) ? result : null;
   }
 
   _markName(index) {
@@ -139,7 +163,7 @@ var _MAX_RETRY_COUNT = 20;
 var _MARK_NAME_PREFIX = 'benchpress';
 var _SET_TIMEOUT = new OpaqueToken('PerflogMetric.setTimeout');
 var _BINDINGS = [
-  bind(Metric).toFactory(
+  bind(PerflogMetric).toFactory(
     (driverExtension, setTimeout) => new PerflogMetric(driverExtension, setTimeout),
     [WebDriverExtension, _SET_TIMEOUT]
   ),

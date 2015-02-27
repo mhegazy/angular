@@ -7,11 +7,15 @@ export var NodeList = window.NodeList;
 export var Text = window.Text;
 export var Element = window.HTMLElement;
 export interface Element extends HTMLElement { }
+export var AnchorElement = window.HTMLAnchorElement;
 export var TemplateElement = window.HTMLTemplateElement;
 export var StyleElement = window.HTMLStyleElement;
+export var ShadowRoot = window.ShadowRoot;
 export var document = window.document;
 export var location = window.location;
 export var gc = window.gc ? () => window.gc() : () => null;
+export var CssRule = window.CSSRule;
+export var CssKeyframesRule = window.CSSKeyframesRule;
 
 
 
@@ -44,6 +48,18 @@ export class DOM {
   }
   static getOuterHTML(el) {
     return el.outerHTML;
+  }
+  static nodeName(node:Node):string {
+    return node.nodeName;
+  }
+  static nodeValue(node:Node):string {
+    return node.nodeValue;
+  }
+  static type(node:Element):string {
+    return node.type;
+  }
+  static content(node:TemplateElement):Node {
+    return node.content;
   }
   static firstChild(el):Node {
     return el.firstChild;
@@ -100,13 +116,28 @@ export class DOM {
   static setText(el, value:string) {
     el.textContent = value;
   }
-  static createTemplate(html): HTMLTemplateElement {
+  static getValue(el: Element) {
+    return el.value;
+  }
+  static setValue(el: Element, value:string) {
+    el.value = value;
+  }
+  static getChecked(el: Element) {
+    return el.checked;
+  }
+  static setChecked(el: Element, value:boolean) {
+    el.checked = value;
+  }
+  static createTemplate(html): HTMLTemplateElement{
     var t: any = document.createElement('template');
     t.innerHTML = html;
     return t;
   }
   static createElement(tagName, doc=document) {
     return doc.createElement(tagName);
+  }
+  static createTextNode(text: string, doc=document) {
+    return doc.createTextNode(text);
   }
   static createScriptTag(attrName:string, attrValue:string, doc=document) {
     var el = doc.createElement("SCRIPT");
@@ -117,6 +148,12 @@ export class DOM {
     var style:any = doc.createElement('STYLE');
     style.innerText = css;
     return style;
+  }
+  static createShadowRoot(el: Element): ShadowRoot {
+    return el.createShadowRoot();
+  }
+  static getShadowRoot(el: Element): ShadowRoot {
+    return el.shadowRoot;
   }
   static clone<T extends Node>(node:T): T {
     return <T>node.cloneNode(true);
@@ -183,5 +220,32 @@ export class DOM {
   }
   static elementMatches(n, selector:string):boolean {
     return n instanceof <any>Element && n.matches(selector);
+  }
+  static isTemplateElement(el:any):boolean {
+    return el instanceof TemplateElement;
+  }
+  static isTextNode(node:Node):boolean {
+    return node.nodeType === Node.TEXT_NODE;
+  }
+  static isElementNode(node:Node):boolean {
+    return node.nodeType === Node.ELEMENT_NODE;
+  }
+  static importIntoDoc(node:Node) {
+    return document.importNode(node, true);
+  }
+}
+
+export class CSSRuleWrapper {
+  static isPageRule(rule) {
+    return rule.type === CSSRule.PAGE_RULE;
+  }
+  static isStyleRule(rule) {
+    return rule.type === CSSRule.STYLE_RULE;
+  }
+  static isMediaRule(rule) {
+    return rule.type === CSSRule.MEDIA_RULE;
+  }
+  static isKeyframesRule(rule) {
+    return rule.type === CSSRule.KEYFRAMES_RULE;
   }
 }

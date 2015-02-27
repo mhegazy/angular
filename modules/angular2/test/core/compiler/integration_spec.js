@@ -1,21 +1,28 @@
 import {describe, xit, it, expect, beforeEach, ddescribe, iit, el} from 'angular2/test_lib';
 
 import {DOM} from 'angular2/src/facade/dom';
-import {Map, MapWrapper} from 'angular2/src/facade/collection';
-import {Type, isPresent} from 'angular2/src/facade/lang';
+import {Type, isPresent, BaseException} from 'angular2/src/facade/lang';
+import {assertionsEnabled, isJsObject} from 'angular2/src/facade/lang';
 
 import {Injector} from 'angular2/di';
-import {Lexer, Parser, ChangeDetector, dynamicChangeDetection} from 'angular2/change_detection';
+import {Lexer, Parser, ChangeDetector, dynamicChangeDetection,
+  DynamicChangeDetection, Pipe, PipeRegistry} from 'angular2/change_detection';
 
 import {Compiler, CompilerCache} from 'angular2/src/core/compiler/compiler';
 import {DirectiveMetadataReader} from 'angular2/src/core/compiler/directive_metadata_reader';
 import {NativeShadowDomStrategy} from 'angular2/src/core/compiler/shadow_dom_strategy';
 import {TemplateLoader} from 'angular2/src/core/compiler/template_loader';
-import {TemplateResolver} from 'angular2/src/core/compiler/template_resolver';
+import {MockTemplateResolver} from 'angular2/src/mock/template_resolver_mock';
 import {BindingPropagationConfig} from 'angular2/src/core/compiler/binding_propagation_config';
+import {ComponentUrlMapper} from 'angular2/src/core/compiler/component_url_mapper';
+import {UrlResolver} from 'angular2/src/core/compiler/url_resolver';
+import {StyleUrlResolver} from 'angular2/src/core/compiler/style_url_resolver';
 
 import {Decorator, Component, Viewport} from 'angular2/src/core/annotations/annotations';
-import {TemplateAnnotation, Template} from 'angular2/src/core/annotations/template';
+import {Template} from 'angular2/src/core/annotations/template';
+import {Parent, Ancestor} from 'angular2/src/core/annotations/visibility';
+
+import {If} from 'angular2/src/directives/if';
 
 import {ViewContainer} from 'angular2/src/core/compiler/view_container';
 
@@ -23,16 +30,23 @@ export function main() {
   describe('integration tests', function() {
     var compiler, tplResolver;
 
-    beforeEach( () => {
-      tplResolver = new FakeTemplateResolver();
-      compiler = new Compiler(dynamicChangeDetection,
-        new TemplateLoader(null),
+    function createCompiler(tplResolver, changedDetection) {
+      var urlResolver = new UrlResolver();
+      return new Compiler(changedDetection,
+        new TemplateLoader(null, null),
         new DirectiveMetadataReader(),
         new Parser(new Lexer()),
         new CompilerCache(),
-        new NativeShadowDomStrategy(),
-        tplResolver
+        new NativeShadowDomStrategy(new StyleUrlResolver(urlResolver)),
+        tplResolver,
+        new ComponentUrlMapper(),
+        urlResolver
       );
+    }
+
+    beforeEach( () => {
+      tplResolver = new MockTemplateResolver();
+      compiler = createCompiler(tplResolver, dynamicChangeDetection);
     });
 
     describe('react to record changes', function() {
@@ -45,8 +59,7 @@ export function main() {
       }
 
       it('should consume text node changes', (done) => {
-        tplResolver.setTemplate(MyComp, new TemplateAnnotation({inline: '<div>{{ctxProp}}</div>'}));
-
+        tplResolver.setTemplate(MyComp, new Template({inline: '<div>{{ctxProp}}</div>'}));
         compiler.compile(MyComp).then((pv) => {
           createView(pv);
           ctx.ctxProp = 'Hello World!';
@@ -58,7 +71,7 @@ export function main() {
       });
 
       it('should consume element binding changes', (done) => {
-        tplResolver.setTemplate(MyComp, new TemplateAnnotation({inline: '<div [id]="ctxProp"></div>'}));
+        tplResolver.setTemplate(MyComp, new Template({inline: '<div [id]="ctxProp"></div>'}));
 
         compiler.compile(MyComp).then((pv) => {
           createView(pv);
@@ -72,7 +85,7 @@ export function main() {
       });
 
       it('should consume binding to aria-* attributes', (done) => {
-        tplResolver.setTemplate(MyComp, new TemplateAnnotation({inline: '<div [aria-label]="ctxProp"></div>'}));
+        tplResolver.setTemplate(MyComp, new Template({inline: '<div [aria-label]="ctxProp"></div>'}));
 
         compiler.compile(MyComp).then((pv) => {
           createView(pv);
@@ -97,7 +110,7 @@ export function main() {
             '<div my-dir elprop="Hi {{\'there!\'}}"></div>' +
             '<div my-dir elprop="One more {{ctxProp}}"></div>' +
           '</div>'
-        tplResolver.setTemplate(MyComp, new TemplateAnnotation({inline: tpl, directives: [MyDir]}));
+        tplResolver.setTemplate(MyComp, new Template({inline: tpl, directives: [MyDir]}));
 
         compiler.compile(MyComp).then((pv) => {
           createView(pv);
@@ -113,8 +126,35 @@ export function main() {
         });
       });
 
+      it("should support pipes in bindings and bind config", (done) => {
+        tplResolver.setTemplate(MyComp,
+          new Template({
+            inline: '<component-with-pipes #comp [prop]="ctxProp | double"></component-with-pipes>',
+            directives: [ComponentWithPipes]
+          }));
+
+
+        var registry = new PipeRegistry({
+          "double" : [new DoublePipeFactory()]
+        });
+        var changeDetection = new DynamicChangeDetection(registry);
+        var compiler = createCompiler(tplResolver, changeDetection);
+        compiler.compile(MyComp).then((pv) => {
+          createView(pv);
+
+          ctx.ctxProp = 'a';
+          cd.detectChanges();
+
+          var comp = view.contextWithLocals.get("comp");
+
+          // it is doubled twice: once in the binding, second time in the bind config
+          expect(comp.prop).toEqual('aaaa');
+          done();
+        });
+      });
+
       it('should support nested components.', (done) => {
-        tplResolver.setTemplate(MyComp, new TemplateAnnotation({
+        tplResolver.setTemplate(MyComp, new Template({
           inline: '<child-cmp></child-cmp>',
           directives: [ChildComp]
         }));
@@ -132,7 +172,7 @@ export function main() {
       // GH issue 328 - https://github.com/angular/angular/issues/328
       it('should support different directive types on a single node', (done) => {
         tplResolver.setTemplate(MyComp,
-          new TemplateAnnotation({
+          new Template({
             inline: '<child-cmp my-dir [elprop]="ctxProp"></child-cmp>',
             directives: [MyDir, ChildComp]
           }));
@@ -151,9 +191,23 @@ export function main() {
         });
       });
 
+      it('should support directives where a binding attribute is not given', function(done) {
+        tplResolver.setTemplate(MyComp,
+          new Template({
+            // No attribute "el-prop" specified.
+            inline: '<p my-dir></p>',
+            directives: [MyDir]
+          }));
+
+        compiler.compile(MyComp).then((pv) => {
+          createView(pv);
+          done();
+        });
+      });
+
       it('should support template directives via `<template>` elements.', (done) => {
         tplResolver.setTemplate(MyComp,
-          new TemplateAnnotation({
+          new Template({
             inline: '<div><template some-viewport var-greeting="some-tmpl"><copy-me>{{greeting}}</copy-me></template></div>',
             directives: [SomeViewport]
           }));
@@ -173,7 +227,7 @@ export function main() {
       });
 
       it('should support template directives via `template` attribute.', (done) => {
-        tplResolver.setTemplate(MyComp, new TemplateAnnotation({
+        tplResolver.setTemplate(MyComp, new Template({
           inline: '<div><copy-me template="some-viewport: var greeting=some-tmpl">{{greeting}}</copy-me></div>',
           directives: [SomeViewport]
         }));
@@ -193,7 +247,7 @@ export function main() {
       });
 
       it('should assign the component instance to a var-', (done) => {
-        tplResolver.setTemplate(MyComp, new TemplateAnnotation({
+        tplResolver.setTemplate(MyComp, new Template({
           inline: '<p><child-cmp var-alice></child-cmp></p>',
           directives: [ChildComp]
         }));
@@ -209,7 +263,7 @@ export function main() {
       });
 
       it('should assign two component instances each with a var-', (done) => {
-        tplResolver.setTemplate(MyComp, new TemplateAnnotation({
+        tplResolver.setTemplate(MyComp, new Template({
           inline: '<p><child-cmp var-alice></child-cmp><child-cmp var-bob></p>',
           directives: [ChildComp]
         }));
@@ -227,7 +281,7 @@ export function main() {
       });
 
       it('should assign the component instance to a var- with shorthand syntax', (done) => {
-        tplResolver.setTemplate(MyComp, new TemplateAnnotation({
+        tplResolver.setTemplate(MyComp, new Template({
           inline: '<child-cmp #alice></child-cmp>',
           directives: [ChildComp]
         }));
@@ -244,7 +298,7 @@ export function main() {
 
       it('should assign the element instance to a user-defined variable', (done) => {
         tplResolver.setTemplate(MyComp,
-          new TemplateAnnotation({inline: '<p><div var-alice><i>Hello</i></div></p>'}));
+          new Template({inline: '<p><div var-alice><i>Hello</i></div></p>'}));
 
         compiler.compile(MyComp).then((pv) => {
           createView(pv);
@@ -259,7 +313,7 @@ export function main() {
       });
 
       it('should provide binding configuration config to the component', (done) => {
-        tplResolver.setTemplate(MyComp, new TemplateAnnotation({
+        tplResolver.setTemplate(MyComp, new Template({
           inline: '<push-cmp #cmp></push-cmp>',
           directives: [[[PushBasedComp]]]
         }));
@@ -282,13 +336,127 @@ export function main() {
           done();
         })
       });
+
+      it('should create a component that injects a @Parent', (done) => {
+        tplResolver.setTemplate(MyComp, new Template({
+          inline: '<some-directive><cmp-with-parent #child></cmp-with-parent></some-directive>',
+          directives: [SomeDirective, CompWithParent]
+        }));
+
+        compiler.compile(MyComp).then((pv) => {
+          createView(pv);
+
+          var childComponent = view.contextWithLocals.get('child');
+          expect(childComponent.myParent).toBeAnInstanceOf(SomeDirective);
+
+          done();
+        })
+      });
+
+      it('should create a component that injects an @Ancestor', (done) => {
+        tplResolver.setTemplate(MyComp, new Template({
+          inline: `
+            <some-directive>
+              <p>
+                <cmp-with-ancestor #child></cmp-with-ancestor>
+              </p>
+            </some-directive>`,
+          directives: [SomeDirective, CompWithAncestor]
+        }));
+
+        compiler.compile(MyComp).then((pv) => {
+          createView(pv);
+
+          var childComponent = view.contextWithLocals.get('child');
+          expect(childComponent.myAncestor).toBeAnInstanceOf(SomeDirective);
+
+          done();
+        })
+      });
+
+      it('should create a component that injects an @Ancestor through viewport directive', (done) => {
+        tplResolver.setTemplate(MyComp, new Template({
+          inline: `
+            <some-directive>
+              <p *if="true">
+                <cmp-with-ancestor #child></cmp-with-ancestor>
+              </p>
+            </some-directive>`,
+          directives: [SomeDirective, CompWithAncestor, If]
+        }));
+
+        compiler.compile(MyComp).then((pv) => {
+          createView(pv);
+          cd.detectChanges();
+
+          var subview = view.viewContainers[0].get(0);
+          var childComponent = subview.contextWithLocals.get('child');
+          expect(childComponent.myAncestor).toBeAnInstanceOf(SomeDirective);
+
+          done();
+        })
+      });
     });
+
+    // TODO support these tests with DART e.g. with Promise.catch (JS) transpiled to Future.catchError (DART)
+    if (assertionsEnabled() && isJsObject({})) {
+
+      function expectCompileError(inlineTpl, errMessage, done) {
+        tplResolver.setTemplate(MyComp, new Template({inline: inlineTpl}));
+        compiler.compile(MyComp).then(() => {
+          throw new BaseException("Test failure: should not have come here as an exception was expected");
+        },(err) => {
+          expect(err.message).toBe(errMessage);
+          done();
+        });
+      }
+
+      it('should raise an error if no directive is registered for an unsupported DOM property', (done) => {
+        expectCompileError(
+          '<div [some-prop]="foo"></div>',
+          'Missing directive to handle \'some-prop\' in MyComp: <div [some-prop]="foo">',
+          done
+        );
+      });
+
+      it('should raise an error if no directive is registered for a template with template bindings', (done) => {
+        expectCompileError(
+          '<div><div template="if: foo"></div></div>',
+          'Missing directive to handle \'if\' in <div template="if: foo">',
+          done
+        );
+      });
+
+      it('should raise an error for missing template directive (1)', (done) => {
+        expectCompileError(
+          '<div><template foo></template></div>',
+          'Missing directive to handle: <template foo>',
+          done
+        );
+      });
+
+      it('should raise an error for missing template directive (2)', (done) => {
+        expectCompileError(
+          '<div><template *if="condition"></template></div>',
+          'Missing directive to handle: <template *if="condition">',
+          done
+        );
+      });
+
+      it('should raise an error for missing template directive (3)', (done) => {
+        expectCompileError(
+          '<div *if="condition"></div>',
+          'Missing directive to handle \'if\' in MyComp: <div *if="condition">',
+          done
+        );
+      });
+    }
   });
 }
 
 @Decorator({
   selector: '[my-dir]',
-  bind: {'elprop':'dirProp'}
+  bind: {'dirProp':'elprop'}
 })
 class MyDir {
   dirProp:string;
@@ -327,6 +495,20 @@ class MyComp {
   }
 }
 
+
+@Component({
+  selector: 'component-with-pipes',
+  bind: {
+    "prop": "prop | double"
+  }
+})
+@Template({
+  inline: ''
+})
+class ComponentWithPipes {
+  prop:string;
+}
+
 @Component({
   selector: 'child-cmp',
   componentServices: [MyService]
@@ -336,6 +518,52 @@ class MyComp {
   inline: '{{ctxProp}}'
 })
 class ChildComp {
+  ctxProp:string;
+  dirProp:string;
+  constructor(service: MyService) {
+    this.ctxProp = service.greeting;
+    this.dirProp = null;
+  }
+}
+
+@Decorator({
+  selector: 'some-directive'
+})
+class SomeDirective { }
+
+@Component({
+  selector: 'cmp-with-parent'
+})
+@Template({
+  inline: '<p>Component with an injected parent</p>',
+  directives: [SomeDirective]
+})
+class CompWithParent {
+  myParent: SomeDirective;
+  constructor(@Parent() someComp: SomeDirective) {
+    this.myParent = someComp;
+  }
+}
+
+@Component({
+  selector: 'cmp-with-ancestor'
+})
+@Template({
+  inline: '<p>Component with an injected ancestor</p>',
+  directives: [SomeDirective]
+})
+class CompWithAncestor {
+  myAncestor: SomeDirective;
+  constructor(@Ancestor() someComp: SomeDirective) {
+    this.myAncestor = someComp;
+  }
+}
+
+@Component({
+  selector: '[child-cmp2]',
+  componentServices: [MyService]
+})
+class ChildComp2 {
   ctxProp:string;
   dirProp:string;
   constructor(service: MyService) {
@@ -361,25 +589,22 @@ class MyService {
   }
 }
 
-class FakeTemplateResolver extends TemplateResolver {
-  _cmpTemplates: Map<any,any>;
-
-  constructor() {
-    super();
-    this._cmpTemplates = MapWrapper.create();
+class DoublePipe extends Pipe {
+  supports(obj) {
+    return true;
   }
 
-  setTemplate(component: Type, template: TemplateAnnotation) {
-    MapWrapper.set(this._cmpTemplates, component, template);
+  transform(value) {
+    return `${value}${value}`;
+  }
+}
+
+class DoublePipeFactory {
+  supports(obj) {
+    return true;
   }
 
-  resolve(component: Type): TemplateAnnotation {
-    var override = MapWrapper.get(this._cmpTemplates, component);
-
-    if (isPresent(override)) {
-      return override;
-    }
-
-    return super.resolve(component);
+  create() {
+    return new DoublePipe();
   }
 }

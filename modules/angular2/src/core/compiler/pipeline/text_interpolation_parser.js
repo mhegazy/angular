@@ -1,5 +1,5 @@
 import {RegExpWrapper, StringWrapper, isPresent} from 'angular2/src/facade/lang';
-import {Node, DOM} from 'angular2/src/facade/dom';
+import {DOM} from 'angular2/src/facade/dom';
 
 import {Parser} from 'angular2/change_detection';
 
@@ -15,11 +15,9 @@ import {CompileControl} from './compile_control';
  */
 export class TextInterpolationParser extends CompileStep {
   _parser:Parser;
-  _compilationUnit:any;
-  constructor(parser:Parser, compilationUnit:any) {
+  constructor(parser:Parser) {
     super();
     this._parser = parser;
-    this._compilationUnit = compilationUnit;
   }
 
   process(parent:CompileElement, current:CompileElement, control:CompileControl) {
@@ -27,17 +25,17 @@ export class TextInterpolationParser extends CompileStep {
       return;
     }
     var element = current.element;
-    var childNodes = DOM.templateAwareRoot(element).childNodes;
+    var childNodes = DOM.childNodes(DOM.templateAwareRoot(element));
     for (var i=0; i<childNodes.length; i++) {
       var node = childNodes[i];
-      if (node.nodeType === Node.TEXT_NODE) {
+      if (DOM.isTextNode(node)) {
         this._parseTextNode(current, node, i);
       }
     }
   }
 
   _parseTextNode(pipelineElement, node, nodeIndex) {
-    var ast = this._parser.parseInterpolation(node.nodeValue, this._compilationUnit);
+    var ast = this._parser.parseInterpolation(DOM.nodeValue(node), pipelineElement.elementDescription);
     if (isPresent(ast)) {
       DOM.setText(node, ' ');
       pipelineElement.addTextNodeBinding(nodeIndex, ast);

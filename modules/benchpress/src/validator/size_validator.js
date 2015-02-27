@@ -1,7 +1,8 @@
-import { List, ListWrapper } from 'angular2/src/facade/collection';
+import { List, ListWrapper, StringMap } from 'angular2/src/facade/collection';
 import { bind, OpaqueToken } from 'angular2/di';
 
 import { Validator } from '../validator';
+import { MeasureValues } from '../measure_values';
 
 import {Binding} from 'angular2/di';
 export {Binding} from 'angular2/di';
@@ -22,13 +23,13 @@ export class SizeValidator extends Validator {
     this._sampleSize = size;
   }
 
-  describe():any {
+  describe():StringMap {
     return {
       'sampleSize': this._sampleSize
     };
   }
 
-  validate(completeSample:List<any>):List<any> {
+  validate(completeSample:List<MeasureValues>):List<MeasureValues> {
     if (completeSample.length >= this._sampleSize) {
       return ListWrapper.slice(completeSample, completeSample.length - this._sampleSize, completeSample.length);
     } else {
@@ -40,7 +41,7 @@ export class SizeValidator extends Validator {
 
 var _SAMPLE_SIZE = new OpaqueToken('SizeValidator.sampleSize');
 var _BINDINGS = [
-  bind(Validator).toFactory(
+  bind(SizeValidator).toFactory(
     (size) => new SizeValidator(size),
     [_SAMPLE_SIZE]
   ),

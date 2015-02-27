@@ -4,13 +4,18 @@ import 'dart:html';
 import 'dart:js' show JsObject, context;
 
 export 'dart:html' show
+  CssRule,
+  CssKeyframesRule,
   document,
   DocumentFragment,
   Element,
   location,
   Node,
+  ShadowRoot,
   StyleElement,
   TemplateElement,
+  InputElement,
+  AnchorElement,
   Text,
   window;
 
@@ -57,6 +62,10 @@ class DOM {
   static void setInnerHTML(Element el, String value) {
     el.innerHtml = value;
   }
+  static String nodeName(Node el) => el.nodeName;
+  static String nodeValue(Node el) => el.nodeValue;
+  static String type(InputElement el) => el.type;
+  static Node content(TemplateElement el) => el.content;
   static Node firstChild(el) => el.firstChild;
   static Node nextSibling(Node el) => el.nextNode;
   static Element parentElement(Node el) => el.parent;
@@ -87,6 +96,14 @@ class DOM {
   static void setText(Node el, String value) {
     el.text = value;
   }
+  static String getValue(InputElement el) => el.value;
+  static void setValue(InputElement el, String value) {
+    el.value = value;
+  }
+  static bool getChecked(InputElement el) => el.checked;
+  static void setChecked(InputElement el, bool isChecked) {
+    el.checked = isChecked;
+  }
   static TemplateElement createTemplate(String html) {
     var t = new TemplateElement();
     t.setInnerHtml(html, treeSanitizer: identitySanitizer);
@@ -95,6 +112,9 @@ class DOM {
   static Element createElement(String tagName, [HtmlDocument doc = null]) {
     if (doc == null) doc = document;
     return doc.createElement(tagName);
+  }
+  static createTextNode(String text, [HtmlDocument doc = null]) {
+    return new Text(text);
   }
   static createScriptTag(String attrName, String attrValue,
       [HtmlDocument doc = null]) {
@@ -109,6 +129,8 @@ class DOM {
     el.text = css;
     return el;
   }
+  static ShadowRoot createShadowRoot(Element el) => el.createShadowRoot();
+  static ShadowRoot getShadowRoot(Element el) => el.shadowRoot;
   static clone(Node node) => node.clone(true);
   static bool hasProperty(Element element, String name) =>
       new JsObject.fromBrowserObject(element).hasProperty(name);
@@ -126,13 +148,13 @@ class DOM {
   static bool hasClass(Element element, String classname) =>
       element.classes.contains(classname);
 
-  static setStyle(Element element, String stylename, String stylevalue) {
+  static void setStyle(Element element, String stylename, String stylevalue) {
       element.style.setProperty(stylename, stylevalue);
   }
-  static removeStyle(Element element, String stylename) {
+  static void removeStyle(Element element, String stylename) {
       element.style.removeProperty(stylename);
   }
-  static getStyle(Element element, String stylename) {
+  static String getStyle(Element element, String stylename) {
       return element.style.getPropertyValue(stylename);
   }
 
@@ -163,4 +185,20 @@ class DOM {
   static HtmlDocument defaultDoc() => document;
   static bool elementMatches(n, String selector) =>
       n is Element && n.matches(selector);
+  static bool isTemplateElement(Element el) =>
+      el is TemplateElement;
+  static bool isTextNode(Node node) =>
+      node.nodeType == Node.TEXT_NODE;
+  static bool isElementNode(Node node) =>
+      node.nodeType == Node.ELEMENT_NODE;
+  static Node importIntoDoc(Node node) {
+    return document.importNode(node, true);
+  }
+}
+
+class CSSRuleWrapper {
+  static bool isPageRule(CssRule rule) => rule is CssPageRule;
+  static bool isStyleRule(CssRule rule) => rule is CssStyleRule;
+  static bool isMediaRule(CssRule rule) => rule is CssMediaRule;
+  static bool isKeyframesRule(CssRule rule) => rule is CssKeyframesRule;
 }

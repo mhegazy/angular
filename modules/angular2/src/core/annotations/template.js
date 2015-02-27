@@ -1,7 +1,6 @@
-import {ABSTRACT, CONST, Type, addAnnotation} from 'angular2/src/facade/lang';
-import {List} from 'angular2/src/facade/collection';
+import {ABSTRACT, CONST, Type} from 'angular2/src/facade/lang';
 
-export class TemplateAnnotation {
+export class Template {
   url:any; //string;
   inline:any; //string;
   directives:any; //List<Type>;
@@ -45,8 +44,4 @@ export class TemplateAnnotation {
     this.locale = locale;
     this.device = device;
   }
-}
-
-export function Template(arg) {
-    return c => addAnnotation(c, new TemplateAnnotation(arg));
 }

@@ -1,4 +1,5 @@
-import {DOM, Element, Node, Text, DocumentFragment, TemplateElement} from 'angular2/src/facade/dom';
+import {DOM, Element, Node, Text, DocumentFragment} from 'angular2/src/facade/dom';
+import {Promise} from 'angular2/src/facade/async';
 import {ListWrapper, MapWrapper, StringMapWrapper, List} from 'angular2/src/facade/collection';
 import {AST, ContextWithVariableBindings, ChangeDispatcher, ProtoChangeDetector, ChangeDetector, ChangeRecord}
   from 'angular2/change_detection';
@@ -12,7 +13,6 @@ import {FIELD, IMPLEMENTS, int, isPresent, isBlank, BaseException} from 'angular
 import {Injector} from 'angular2/di';
 import {NgElement} from 'angular2/src/core/dom/element';
 import {ViewContainer} from './view_container';
-import {Content} from './shadow_dom_emulation/content_tag';
 import {LightDom, DestinationLightDom} from './shadow_dom_emulation/light_dom';
 import {ShadowDomStrategy} from './shadow_dom_strategy';
 import {ViewPool} from './view_pool';
@@ -21,8 +21,6 @@ import {Component, ComponentAnnotation} from 'angular2/src/core/annotations/anno
 
 const NG_BINDING_CLASS = 'ng-binding';
 const NG_BINDING_CLASS_SELECTOR = '.ng-binding';
-// TODO(tbosch): Cannot use `const` because of Dart.
-var NO_FORMATTERS = MapWrapper.create();
 
 // TODO(rado): make this configurable/smarter.
 var VIEW_POOL_CAPACITY = 10000;
@@ -52,7 +50,7 @@ export class View {
   constructor(proto:ProtoView, nodes:List<Node>, protoChangeDetector:ProtoChangeDetector, protoContextLocals:Map<any,any>) {
     this.proto = proto;
     this.nodes = nodes;
-    this.changeDetector = protoChangeDetector.instantiate(this, NO_FORMATTERS);
+    this.changeDetector = protoChangeDetector.instantiate(this);
     this.elementInjectors = null;
     this.rootElementInjectors = null;
     this.textNodes = null;
@@ -277,6 +275,8 @@ export class ProtoView {
   isTemplateElement:boolean;
   shadowDomStrategy: ShadowDomStrategy;
   _viewPool: ViewPool;
+  stylePromises: List<Promise>;
+
   constructor(
       template:Element,
       protoChangeDetector:ProtoChangeDetector,
@@ -291,9 +291,10 @@ export class ProtoView {
     this.instantiateInPlace = false;
     this.rootBindingOffset = (isPresent(this.element) && DOM.hasClass(this.element, NG_BINDING_CLASS))
       ? 1 : 0;
-    this.isTemplateElement = this.element instanceof <any>TemplateElement;
+    this.isTemplateElement = DOM.isTemplateElement(this.element);
     this.shadowDomStrategy = shadowDomStrategy;
     this._viewPool = new ViewPool(VIEW_POOL_CAPACITY);
+    this.stylePromises = [];
   }
 
   // TODO(rado): hostElementInjector should be moved to hydrate phase.
@@ -310,10 +311,10 @@ export class ProtoView {
   }
 
   _instantiate(hostElementInjector: ElementInjector, eventManager: EventManager): View {
-    var rootElementClone = this.instantiateInPlace ? this.element : DOM.clone(this.element);
+    var rootElementClone = this.instantiateInPlace ? this.element : DOM.importIntoDoc(this.element);
     var elementsWithBindingsDynamic;
     if (this.isTemplateElement) {
-      elementsWithBindingsDynamic = DOM.querySelectorAll((<TemplateElement>rootElementClone).content, NG_BINDING_CLASS_SELECTOR);
+      elementsWithBindingsDynamic = DOM.querySelectorAll(DOM.content(rootElementClone), NG_BINDING_CLASS_SELECTOR);
     } else {
       elementsWithBindingsDynamic= DOM.getElementsByClassName(rootElementClone, NG_BINDING_CLASS);
     }
@@ -325,7 +326,7 @@ export class ProtoView {
 
     var viewNodes;
     if (this.isTemplateElement) {
-      var childNode = DOM.firstChild((<TemplateElement>rootElementClone).content);
+      var childNode = DOM.firstChild(DOM.content(rootElementClone));
       viewNodes = []; // TODO(perf): Should be fixed size, since we could pre-compute in in ProtoView
       // Note: An explicit loop is the fastest way to convert a DOM array into a JS array!
       while(childNode != null) {
@@ -513,8 +514,7 @@ export class ProtoView {
     directiveIndex:number,
     expression:AST,
     setterName:string,
-    setter:SetterFn,
-    isContentWatch: boolean) {
+    setter:SetterFn) {
 
     var bindingMemento = new DirectiveBindingMemento(
       this.elementBinders.length-1,
@@ -523,7 +523,7 @@ export class ProtoView {
       setter
     );
     var directiveMemento = DirectiveMemento.get(bindingMemento);
-    this.protoChangeDetector.addAst(expression, bindingMemento, directiveMemento, isContentWatch);
+    this.protoChangeDetector.addAst(expression, bindingMemento, directiveMemento);
   }
 
   // Create a rootView as if the compiler encountered <rootcmp></rootcmp>,
@@ -536,13 +536,15 @@ export class ProtoView {
       shadowDomStrategy: ShadowDomStrategy
   ): ProtoView {
 
-    DOM.addClass(insertionElement, 'ng-binding');
+    DOM.addClass(insertionElement, NG_BINDING_CLASS);
+    var cmpType = rootComponentAnnotatedType.type;
     var rootProtoView = new ProtoView(insertionElement, protoChangeDetector, shadowDomStrategy);
     rootProtoView.instantiateInPlace = true;
     var binder = rootProtoView.bindElement(
-        new ProtoElementInjector(null, 0, [rootComponentAnnotatedType.type], true));
+        new ProtoElementInjector(null, 0, [cmpType], true));
     binder.componentDirective = rootComponentAnnotatedType;
     binder.nestedProtoView = protoView;
+    shadowDomStrategy.shimHostElement(cmpType, insertionElement);
     return rootProtoView;
   }
 }

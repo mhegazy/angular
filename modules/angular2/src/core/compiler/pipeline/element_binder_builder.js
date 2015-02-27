@@ -6,12 +6,7 @@ import {reflector} from 'angular2/src/reflection/reflection';
 
 import {Parser, ProtoChangeDetector} from 'angular2/change_detection';
 
-import {Component, Directive} from '../../annotations/annotations';
 import {DirectiveMetadata} from '../directive_metadata';
-import {ProtoView} from '../view';
-import {ProtoElementInjector} from '../element_injector';
-import {ElementBinder} from '../element_binder';
-
 import {CompileStep} from './compile_step';
 import {CompileElement} from './compile_element';
 import {CompileControl} from './compile_control';
@@ -38,6 +33,7 @@ function ariaSetterFactory(attrName:string) {
   return setterFn;
 }
 
+const CLASS_ATTR = 'class';
 const CLASS_PREFIX = 'class.';
 var classSettersCache = StringMapWrapper.create();
 
@@ -58,6 +54,7 @@ function classSetterFactory(className:string) {
   return setterFn;
 }
 
+const STYLE_ATTR = 'style';
 const STYLE_PREFIX = 'style.';
 var styleSettersCache = StringMapWrapper.create();
 
@@ -93,6 +90,13 @@ function roleSetter(element:Element, value) {
   }
 }
 
+// tells if an attribute is handled by the ElementBinderBuilder step
+export function isSpecialProperty(propName:string) {
+  return StringWrapper.startsWith(propName, ARIA_PREFIX) 
+        || StringWrapper.startsWith(propName, CLASS_PREFIX) 
+        || StringWrapper.startsWith(propName, STYLE_PREFIX);
+}
+
 /**
  * Creates the ElementBinders and adds watches to the
  * ProtoChangeDetector.
@@ -119,11 +123,9 @@ function roleSetter(element:Element, value) {
  */
 export class ElementBinderBuilder extends CompileStep {
   _parser:Parser;
-  _compilationUnit:any;
-  constructor(parser:Parser, compilationUnit:any) {
+  constructor(parser:Parser) {
     super();
     this._parser = parser;
-    this._compilationUnit = compilationUnit;
   }
 
   process(parent:CompileElement, current:CompileElement, control:CompileControl) {
@@ -199,32 +201,38 @@ export class ElementBinderBuilder extends CompileStep {
       var directive = ListWrapper.get(directives, directiveIndex);
       var annotation = directive.annotation;
       if (isBlank(annotation.bind)) continue;
-      var _this = this;
-      StringMapWrapper.forEach(annotation.bind, function (dirProp, elProp) {
-        var expression = isPresent(compileElement.propertyBindings) ?
+      StringMapWrapper.forEach(annotation.bind, (bindConfig, dirProp) => {
+        var bindConfigParts = this._splitBindConfig(bindConfig);
+        var elProp = bindConfigParts[0];
+        var pipes = ListWrapper.slice(bindConfigParts, 1, bindConfigParts.length);
+
+        var bindingAst = isPresent(compileElement.propertyBindings) ?
           MapWrapper.get(compileElement.propertyBindings, elProp) :
             null;
-        if (isBlank(expression)) {
+
+        if (isBlank(bindingAst)) {
           var attributeValue = MapWrapper.get(compileElement.attrs(), elProp);
           if (isPresent(attributeValue)) {
-            expression = _this._parser.wrapLiteralPrimitive(attributeValue, _this._compilationUnit);
-          } else {
-            throw new BaseException("No element binding found for property '" + elProp
-            + "' which is required by directive '" + stringify(directive.type) + "'");
+            bindingAst = this._parser.wrapLiteralPrimitive(attributeValue, compileElement.elementDescription);
           }
         }
-        var len = dirProp.length;
-        var dirBindingName = dirProp;
-        var isContentWatch = dirProp[len - 2] === '[' && dirProp[len - 1] === ']';
-        if (isContentWatch) dirBindingName = dirProp.substring(0, len - 2);
-        protoView.bindDirectiveProperty(
-          directiveIndex,
-          expression,
-          dirBindingName,
-          reflector.setter(dirBindingName),
-          isContentWatch
-        );
+
+        // Bindings are optional, so this binding only needs to be set up if an expression is given.
+        if (isPresent(bindingAst)) {
+          var fullExpAstWithBindPipes = this._parser.addPipes(bindingAst, pipes);
+          protoView.bindDirectiveProperty(
+            directiveIndex,
+            fullExpAstWithBindPipes,
+            dirProp,
+            reflector.setter(dirProp)
+          );
+        }
       });
     }
+  }
+
+  _splitBindConfig(bindConfig:string) {
+    var parts = StringWrapper.split(bindConfig, RegExpWrapper.create("\\|"));
+    return ListWrapper.map(parts, (s) => s.trim());
   }
 }

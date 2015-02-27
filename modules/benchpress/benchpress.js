@@ -10,7 +10,11 @@ export { ConsoleReporter } from './src/reporter/console_reporter';
 export { SampleDescription } from './src/sample_description';
 export { PerflogMetric } from './src/metric/perflog_metric';
 export { ChromeDriverExtension } from './src/webdriver/chrome_driver_extension';
+export { IOsDriverExtension } from './src/webdriver/ios_driver_extension';
 export { Runner } from './src/runner';
 export { Options } from './src/sample_options';
+export { MeasureValues } from './src/measure_values';
+export { MultiMetric } from './src/metric/multi_metric';
+export { MultiReporter } from './src/reporter/multi_reporter';
 
 export { bind, Injector, OpaqueToken } from 'angular2/di';

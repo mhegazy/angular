@@ -1,8 +1,8 @@
 import {List, Map, ListWrapper, MapWrapper} from 'angular2/src/facade/collection';
 import {Element, DOM} from 'angular2/src/facade/dom';
-import {int, isBlank, isPresent, Type} from 'angular2/src/facade/lang';
+import {int, isBlank, isPresent, Type, StringJoiner, assertionsEnabled} from 'angular2/src/facade/lang';
 import {DirectiveMetadata} from '../directive_metadata';
-import {DecoratorAnnotation, ComponentAnnotation, ViewportAnnotation} from '../../annotations/annotations';
+import {Decorator, Component, Viewport} from '../../annotations/annotations';
 import {ElementBinder} from '../element_binder';
 import {ProtoElementInjector} from '../element_injector';
 import {ProtoView} from '../view';
@@ -38,8 +38,9 @@ export class CompileElement {
   distanceToParentInjector:number;
   compileChildren: boolean;
   ignoreBindings: boolean;
+  elementDescription: string; // e.g. '<div [class]="foo">' : used to provide context in case of error
 
-  constructor(element:Element) {
+  constructor(element:Element, compilationUnit = '') {
     this.element = element;
     this._attrs = null;
     this._classList = null;
@@ -66,6 +67,14 @@ export class CompileElement {
     this.compileChildren = true;
     // set to true to ignore all the bindings on the element
     this.ignoreBindings = false;
+    // description is calculated here as compilation steps may change the element
+    var tplDesc = assertionsEnabled()? getElementDescription(element) : null;
+    if (compilationUnit !== '') {
+      this.elementDescription = compilationUnit;
+      if (isPresent(tplDesc)) this.elementDescription += ": " + tplDesc;
+    } else {
+      this.elementDescription = tplDesc;
+    }
   }
 
   refreshAttrs() {
@@ -131,7 +140,7 @@ export class CompileElement {
   addDirective(directive:DirectiveMetadata) {
     var annotation = directive.annotation;
     this._allDirectives = null;
-    if (annotation instanceof DecoratorAnnotation) {
+    if (annotation instanceof Decorator) {
       if (isBlank(this.decoratorDirectives)) {
         this.decoratorDirectives = ListWrapper.create();
       }
@@ -139,9 +148,9 @@ export class CompileElement {
       if (!annotation.compileChildren) {
         this.compileChildren = false;
       }
-    } else if (annotation instanceof ViewportAnnotation) {
+    } else if (annotation instanceof Viewport) {
       this.viewportDirective = directive;
-    } else if (annotation instanceof ComponentAnnotation) {
+    } else if (annotation instanceof Component) {
       this.componentDirective = directive;
     }
   }
@@ -163,5 +172,38 @@ export class CompileElement {
       this._allDirectives = directives;
     }
     return this._allDirectives;
+  }
+}
+
+// return an HTML representation of an element start tag - without its content
+// this is used to give contextual information in case of errors
+function getElementDescription(domElement:Element):string {
+  var buf = new StringJoiner();
+  var atts = DOM.attributeMap(domElement);
+
+  buf.add("<");
+  buf.add(DOM.tagName(domElement).toLowerCase());
+  
+  // show id and class first to ease element identification
+  addDescriptionAttribute(buf, "id", MapWrapper.get(atts, "id"));
+  addDescriptionAttribute(buf, "class", MapWrapper.get(atts, "class"));
+  MapWrapper.forEach(atts, (attValue, attName) => {
+      if (attName !== "id" && attName !== "class") {
+          addDescriptionAttribute(buf, attName, attValue);
+      }
+  });
+
+  buf.add(">");
+  return buf.toString();
+}
+
+
+function addDescriptionAttribute(buffer:StringJoiner, attName:string, attValue) {
+  if (isPresent(attValue)) {
+      if (attValue.length === 0) {
+          buffer.add(' ' + attName);
+      } else {
+          buffer.add(' ' + attName + '="' + attValue + '"');
+      }
   }
 }

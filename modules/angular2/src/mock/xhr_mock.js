@@ -60,7 +60,7 @@ export class XHRMock extends XHR {
 
     if (this._expectations.length > 0) {
       var expectation = this._expectations[0];
-      if (expectation.url === url) {
+      if (expectation.url == url) {
         ListWrapper.remove(this._expectations, expectation);
         request.complete(expectation.response);
         return;
@@ -90,7 +90,7 @@ export class _PendingRequest {
     if (isBlank(response)) {
       this.completer.reject(`Failed to load ${this.url}`);
     } else {
-      this.completer.complete(response);
+      this.completer.resolve(response);
     }
   }
 

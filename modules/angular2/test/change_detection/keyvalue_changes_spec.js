@@ -1,5 +1,5 @@
 import {describe, it, iit, xit, expect, beforeEach, afterEach} from 'angular2/test_lib';
-import {KeyValueChanges} from 'angular2/src/change_detection/keyvalue_changes';
+import {KeyValueChanges} from 'angular2/src/change_detection/pipes/keyvalue_changes';
 import {NumberWrapper, isJsObject} from 'angular2/src/facade/lang';
 import {MapWrapper} from 'angular2/src/facade/collection';
 import {kvChangesAsString} from './util';
@@ -131,10 +131,10 @@ export function main() {
       if (isJsObject({})) {
         describe('JsObject changes', () => {
           it('should support JS Object', () => {
-            expect(KeyValueChanges.supports({})).toBeTruthy();
-            expect(KeyValueChanges.supports("not supported")).toBeFalsy();
-            expect(KeyValueChanges.supports(0)).toBeFalsy();
-            expect(KeyValueChanges.supports(null)).toBeFalsy();
+            expect(KeyValueChanges.supportsObj({})).toBeTruthy();
+            expect(KeyValueChanges.supportsObj("not supported")).toBeFalsy();
+            expect(KeyValueChanges.supportsObj(0)).toBeFalsy();
+            expect(KeyValueChanges.supportsObj(null)).toBeFalsy();
           });
 
           it('should do basic object watching', () => {
