@@ -24,8 +24,8 @@ import {StyleInliner} from 'angular2/src/core/compiler/style_inliner';
 
 import {MockTemplateResolver} from 'angular2/src/mock/template_resolver_mock';
 
-import {Decorator, Component, Viewport} from 'angular2/src/core/annotations/annotations';
-import {Template} from 'angular2/src/core/annotations/template';
+import {Decorator, ComponentAnnotation, Component, Viewport} from 'angular2/src/core/annotations/annotations';
+import {TemplateAnnotation, Template} from 'angular2/src/core/annotations/template';
 
 import {ViewContainer} from 'angular2/src/core/compiler/view_container';
 
@@ -60,7 +60,7 @@ export function main() {
         });
 
         function compile(template, directives: List<Type>, assertions) {
-          tplResolver.setTemplate(MyComp, new Template({
+          tplResolver.setTemplate(MyComp, new TemplateAnnotation({
             inline: template,
             directives: directives
           }));
@@ -238,7 +238,7 @@ class TestDirectiveMetadataReader extends DirectiveMetadataReader {
     this.shadowDomStrategy = shadowDomStrategy;
   }
 
-  parseShadowDomStrategy(annotation:Component):ShadowDomStrategy{
+  parseShadowDomStrategy(annotation:ComponentAnnotation):ShadowDomStrategy{
     return this.shadowDomStrategy;
   }
 }
@@ -291,7 +291,7 @@ class MultipleContentTagsComponent {
 
 
 @Component({selector: 'conditional-content'})
-@Template({
+ @Template({
   inline: '<div>(<div template="auto: cond"><content select=".left"></content></div>, <content></content>)</div>',
   directives: [AutoViewportDirective]
 })

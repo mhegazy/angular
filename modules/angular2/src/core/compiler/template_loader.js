@@ -4,7 +4,7 @@ import {Map, MapWrapper, StringMapWrapper, StringMap} from 'angular2/src/facade/
 
 import {XHR} from './xhr/xhr';
 
-import {Template} from 'angular2/src/core/annotations/template';
+import {TemplateAnnotation} from 'angular2/src/core/annotations/template';
 
 import {UrlResolver} from './url_resolver';
 
@@ -27,7 +27,7 @@ export class TemplateLoader {
   }
 
   // TODO(vicb): union type: return an Element or a Promise<Element>
-  load(template: Template) {
+  load(template: TemplateAnnotation) {
     if (isPresent(template.inline)) {
       return DOM.createTemplate(template.inline);
     }

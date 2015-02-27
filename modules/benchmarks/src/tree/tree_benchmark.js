@@ -2,7 +2,7 @@ import {Parser, Lexer, ChangeDetector, ChangeDetection, jitChangeDetection}
   from 'angular2/change_detection';
 import {ExceptionHandler} from 'angular2/src/core/exception_handler';
 
-import {bootstrap, Component, Viewport, Template, ViewContainer, Compiler} from 'angular2/angular2';
+import {bootstrap, ComponentAnnotation, ViewportAnnotation, TemplateAnnotation, ViewContainer, Compiler} from 'angular2/angular2';
 
 import {CompilerCache} from 'angular2/src/core/compiler/compiler';
 import {DirectiveMetadataReader} from 'angular2/src/core/compiler/directive_metadata_reader';
@@ -33,8 +33,8 @@ function setupReflector() {
     'factory': () => new AppComponent(),
     'parameters': [],
     'annotations' : [
-      new Component({selector: 'app'}),
-      new Template({
+      new ComponentAnnotation({selector: 'app'}),
+      new TemplateAnnotation({
         directives: [TreeComponent],
         inline: `<tree [data]='initData'></tree>`
       })]
@@ -44,11 +44,11 @@ function setupReflector() {
     'factory': () => new TreeComponent(),
     'parameters': [],
     'annotations' : [
-      new Component({
+      new ComponentAnnotation({
         selector: 'tree',
         bind: {'data': 'data'}
       }),
-      new Template({
+      new TemplateAnnotation({
         directives: [TreeComponent, If],
         inline: `<span> {{data.value}} <span template='if data.right != null'><tree [data]='data.right'></tree></span><span template='if data.left != null'><tree [data]='data.left'></tree></span></span>`
       })]
@@ -57,7 +57,7 @@ function setupReflector() {
   reflector.registerType(If, {
     'factory': (vp) => new If(vp),
     'parameters': [[ViewContainer]],
-    'annotations' : [new Viewport({
+    'annotations' : [new ViewportAnnotation({
       selector: '[if]',
       bind: {
         'condition': 'if'

@@ -5,7 +5,7 @@ import {SelectorMatcher} from '../selector';
 import {CssSelector} from '../selector';
 
 import {DirectiveMetadata} from '../directive_metadata';
-import {Component, Viewport} from '../../annotations/annotations';
+import {ComponentAnnotation, ViewportAnnotation} from '../../annotations/annotations';
 import {CompileStep} from './compile_step';
 import {CompileElement} from './compile_element';
 import {CompileControl} from './compile_control';

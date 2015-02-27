@@ -11,8 +11,8 @@ import {UrlResolver} from 'angular2/src/core/compiler/url_resolver';
 import {StyleUrlResolver} from 'angular2/src/core/compiler/style_url_resolver';
 
 import {Decorator, Component} from 'angular2/src/core/annotations/annotations';
-import {Template} from 'angular2/src/core/annotations/template';
 
+import {TemplateAnnotation} from 'angular2/src/core/annotations/template';
 import {TemplateLoader} from 'angular2/src/core/compiler/template_loader';
 import {NgElement} from 'angular2/src/core/dom/element';
 import {NonBindable} from 'angular2/src/directives/non_bindable';
@@ -44,7 +44,7 @@ export function main() {
     }
 
     function compileWithTemplate(html) {
-      var template = new Template({
+      var template = new TemplateAnnotation({
         inline: html,
         directives: [NonBindable, TestDecorator]
       });

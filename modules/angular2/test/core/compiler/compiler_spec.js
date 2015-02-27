@@ -9,7 +9,7 @@ import {Compiler, CompilerCache} from 'angular2/src/core/compiler/compiler';
 import {ProtoView} from 'angular2/src/core/compiler/view';
 import {DirectiveMetadataReader} from 'angular2/src/core/compiler/directive_metadata_reader';
 import {Component} from 'angular2/src/core/annotations/annotations';
-import {Template} from 'angular2/src/core/annotations/template';
+import {Template, TemplateAnnotation} from 'angular2/src/core/annotations/template';
 import {CompileElement} from 'angular2/src/core/compiler/pipeline/compile_element';
 import {CompileStep} from 'angular2/src/core/compiler/pipeline/compile_step'
 import {CompileControl} from 'angular2/src/core/compiler/pipeline/compile_control';
@@ -55,7 +55,7 @@ export function main() {
           var compiler = createCompiler( (parent, current, control) => {
             current.inheritedProtoView = rootProtoView;
           });
-          tplResolver.setTemplate(MainComponent, new Template({inline: '<div></div>'}));
+          tplResolver.setTemplate(MainComponent, new TemplateAnnotation({inline: '<div></div>'}));
           compiler.compile(MainComponent).then( (protoView) => {
             expect(protoView).toBe(rootProtoView);
             done();
@@ -108,7 +108,7 @@ export function main() {
               current.inheritedProtoView = new ProtoView(current.element, null, null);
             }
           });
-          tplResolver.setTemplate(MainComponent, new Template({inline: '<div class="nested"></div>'}));
+          tplResolver.setTemplate(MainComponent, new TemplateAnnotation({inline: '<div class="nested"></div>'}));
           compiler.compile(MainComponent).then( (protoView) => {
             var nestedView = protoView.elementBinders[0].nestedProtoView;
             expect(DOM.getInnerHTML(nestedView.element)).toEqual('nested component');
@@ -121,7 +121,7 @@ export function main() {
             current.inheritedProtoView = new ProtoView(current.element, null, null);
           });
           var firstProtoView;
-          tplResolver.setTemplate(MainComponent, new Template({inline: '<div></div>'}));
+          tplResolver.setTemplate(MainComponent, new TemplateAnnotation({inline: '<div></div>'}));
           compiler.compile(MainComponent).then( (protoView) => {
             firstProtoView = protoView;
             return compiler.compile(MainComponent);
@@ -142,7 +142,7 @@ export function main() {
             }
           });
           tplResolver.setTemplate(MainComponent,
-            new Template({inline: '<div><div class="nested"></div><div class="nested"></div></div>'}));
+            new TemplateAnnotation({inline: '<div><div class="nested"></div><div class="nested"></div></div>'}));
           compiler.compile(MainComponent).then( (protoView) => {
             expect(nestedElBinders[0].nestedProtoView).toBe(nestedElBinders[1].nestedProtoView);
             done();
@@ -305,7 +305,7 @@ class TestableCompiler extends Compiler {
     this.steps = steps;
   }
 
-  createSteps(component:Type, template: Template):List<CompileStep> {
+  createSteps(component:Type, template: TemplateAnnotation):List<CompileStep> {
     return this.steps;
   }
 }
@@ -372,7 +372,7 @@ class FakeTemplateResolver extends TemplateResolver {
     this._cmpTemplates = MapWrapper.create();
   }
 
-  resolve(component: Type): Template {
+  resolve(component: Type): TemplateAnnotation {
     var template = MapWrapper.get(this._cmpTemplates, component);
     if (isBlank(template)) {
       template = super.resolve(component);
@@ -385,7 +385,7 @@ class FakeTemplateResolver extends TemplateResolver {
     }
 
     if (ListWrapper.contains(this._errorCmp, component)) {
-      return new Template({url: null, inline: null});
+      return new TemplateAnnotation({url: null, inline: null});
     }
 
     if (ListWrapper.contains(this._syncCmp, component)) {
@@ -393,7 +393,7 @@ class FakeTemplateResolver extends TemplateResolver {
     }
 
     if (ListWrapper.contains(this._asyncCmp, component)) {
-      return new Template({url: html});
+      return new TemplateAnnotation({url: html});
     }
 
     if (this._forceSync) return template;
@@ -424,7 +424,7 @@ class FakeTemplateResolver extends TemplateResolver {
     ListWrapper.push(this._errorCmp, component);
   }
 
-  setTemplate(component: Type, template: Template) {
+  setTemplate(component: Type, template: TemplateAnnotation) {
     MapWrapper.set(this._cmpTemplates, component, template);
   }
 }

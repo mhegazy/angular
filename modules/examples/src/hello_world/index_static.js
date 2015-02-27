@@ -1,6 +1,6 @@
 import *  as app from './index_common';
 
-import {Component, Decorator, Template, NgElement} from 'angular2/angular2';
+import {ComponentAnnotation, DecoratorAnnotation, TemplateAnnotation, NgElement} from 'angular2/angular2';
 import {Lexer, Parser, ChangeDetection, ChangeDetector} from 'angular2/change_detection';
 import {ExceptionHandler} from 'angular2/src/core/exception_handler';
 import {LifeCycle} from 'angular2/src/core/life_cycle/life_cycle';
@@ -24,11 +24,11 @@ function setup() {
     "factory": (service) => new app.HelloCmp(service),
     "parameters": [[app.GreetingService]],
     "annotations" : [
-      new Component({
+      new ComponentAnnotation({
         selector: 'hello-app',
         componentServices: [app.GreetingService]
       }),
-      new Template({
+      new TemplateAnnotation({
         directives: [app.RedDec],
         inline: `<div class="greeting">{{greeting}} <span red>world</span>!</div>
                  <button class="changeButton" (click)="changeGreeting()">change greeting</button>`
@@ -38,7 +38,7 @@ function setup() {
   reflector.registerType(app.RedDec, {
     "factory": (el) => new app.RedDec(el),
     "parameters": [[NgElement]],
-    "annotations" : [new Decorator({selector: '[red]'})]
+    "annotations" : [new DecoratorAnnotation({selector: '[red]'})]
   });
 
   reflector.registerType(app.GreetingService, {

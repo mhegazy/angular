@@ -2,7 +2,7 @@ import {List, Map, ListWrapper, MapWrapper} from 'angular2/src/facade/collection
 import {Element, DOM} from 'angular2/src/facade/dom';
 import {int, isBlank, isPresent, Type, StringJoiner, assertionsEnabled} from 'angular2/src/facade/lang';
 import {DirectiveMetadata} from '../directive_metadata';
-import {Decorator, Component, Viewport} from '../../annotations/annotations';
+import {DecoratorAnnotation, ComponentAnnotation, ViewportAnnotation} from '../../annotations/annotations';
 import {ElementBinder} from '../element_binder';
 import {ProtoElementInjector} from '../element_injector';
 import {ProtoView} from '../view';
@@ -140,7 +140,7 @@ export class CompileElement {
   addDirective(directive:DirectiveMetadata) {
     var annotation = directive.annotation;
     this._allDirectives = null;
-    if (annotation instanceof Decorator) {
+    if (annotation instanceof DecoratorAnnotation) {
       if (isBlank(this.decoratorDirectives)) {
         this.decoratorDirectives = ListWrapper.create();
       }
@@ -148,9 +148,9 @@ export class CompileElement {
       if (!annotation.compileChildren) {
         this.compileChildren = false;
       }
-    } else if (annotation instanceof Viewport) {
+    } else if (annotation instanceof ViewportAnnotation) {
       this.viewportDirective = directive;
-    } else if (annotation instanceof Component) {
+    } else if (annotation instanceof ComponentAnnotation) {
       this.componentDirective = directive;
     }
   }

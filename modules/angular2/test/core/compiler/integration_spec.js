@@ -19,7 +19,7 @@ import {UrlResolver} from 'angular2/src/core/compiler/url_resolver';
 import {StyleUrlResolver} from 'angular2/src/core/compiler/style_url_resolver';
 
 import {Decorator, Component, Viewport} from 'angular2/src/core/annotations/annotations';
-import {Template} from 'angular2/src/core/annotations/template';
+import {TemplateAnnotation, Template} from 'angular2/src/core/annotations/template';
 import {Parent, Ancestor} from 'angular2/src/core/annotations/visibility';
 
 import {If} from 'angular2/src/directives/if';
@@ -59,7 +59,7 @@ export function main() {
       }
 
       it('should consume text node changes', (done) => {
-        tplResolver.setTemplate(MyComp, new Template({inline: '<div>{{ctxProp}}</div>'}));
+        tplResolver.setTemplate(MyComp, new TemplateAnnotation({inline: '<div>{{ctxProp}}</div>'}));
         compiler.compile(MyComp).then((pv) => {
           createView(pv);
           ctx.ctxProp = 'Hello World!';
@@ -71,7 +71,7 @@ export function main() {
       });
 
       it('should consume element binding changes', (done) => {
-        tplResolver.setTemplate(MyComp, new Template({inline: '<div [id]="ctxProp"></div>'}));
+        tplResolver.setTemplate(MyComp, new TemplateAnnotation({inline: '<div [id]="ctxProp"></div>'}));
 
         compiler.compile(MyComp).then((pv) => {
           createView(pv);
@@ -85,7 +85,7 @@ export function main() {
       });
 
       it('should consume binding to aria-* attributes', (done) => {
-        tplResolver.setTemplate(MyComp, new Template({inline: '<div [aria-label]="ctxProp"></div>'}));
+        tplResolver.setTemplate(MyComp, new TemplateAnnotation({inline: '<div [aria-label]="ctxProp"></div>'}));
 
         compiler.compile(MyComp).then((pv) => {
           createView(pv);
@@ -110,7 +110,7 @@ export function main() {
             '<div my-dir elprop="Hi {{\'there!\'}}"></div>' +
             '<div my-dir elprop="One more {{ctxProp}}"></div>' +
           '</div>'
-        tplResolver.setTemplate(MyComp, new Template({inline: tpl, directives: [MyDir]}));
+        tplResolver.setTemplate(MyComp, new TemplateAnnotation({inline: tpl, directives: [MyDir]}));
 
         compiler.compile(MyComp).then((pv) => {
           createView(pv);
@@ -154,7 +154,7 @@ export function main() {
       });
 
       it('should support nested components.', (done) => {
-        tplResolver.setTemplate(MyComp, new Template({
+        tplResolver.setTemplate(MyComp, new TemplateAnnotation({
           inline: '<child-cmp></child-cmp>',
           directives: [ChildComp]
         }));
@@ -172,7 +172,7 @@ export function main() {
       // GH issue 328 - https://github.com/angular/angular/issues/328
       it('should support different directive types on a single node', (done) => {
         tplResolver.setTemplate(MyComp,
-          new Template({
+          new TemplateAnnotation({
             inline: '<child-cmp my-dir [elprop]="ctxProp"></child-cmp>',
             directives: [MyDir, ChildComp]
           }));
@@ -207,7 +207,7 @@ export function main() {
 
       it('should support template directives via `<template>` elements.', (done) => {
         tplResolver.setTemplate(MyComp,
-          new Template({
+          new TemplateAnnotation({
             inline: '<div><template some-viewport var-greeting="some-tmpl"><copy-me>{{greeting}}</copy-me></template></div>',
             directives: [SomeViewport]
           }));
@@ -227,7 +227,7 @@ export function main() {
       });
 
       it('should support template directives via `template` attribute.', (done) => {
-        tplResolver.setTemplate(MyComp, new Template({
+        tplResolver.setTemplate(MyComp, new TemplateAnnotation({
           inline: '<div><copy-me template="some-viewport: var greeting=some-tmpl">{{greeting}}</copy-me></div>',
           directives: [SomeViewport]
         }));
@@ -247,7 +247,7 @@ export function main() {
       });
 
       it('should assign the component instance to a var-', (done) => {
-        tplResolver.setTemplate(MyComp, new Template({
+        tplResolver.setTemplate(MyComp, new TemplateAnnotation({
           inline: '<p><child-cmp var-alice></child-cmp></p>',
           directives: [ChildComp]
         }));
@@ -263,7 +263,7 @@ export function main() {
       });
 
       it('should assign two component instances each with a var-', (done) => {
-        tplResolver.setTemplate(MyComp, new Template({
+        tplResolver.setTemplate(MyComp, new TemplateAnnotation({
           inline: '<p><child-cmp var-alice></child-cmp><child-cmp var-bob></p>',
           directives: [ChildComp]
         }));
@@ -281,7 +281,7 @@ export function main() {
       });
 
       it('should assign the component instance to a var- with shorthand syntax', (done) => {
-        tplResolver.setTemplate(MyComp, new Template({
+        tplResolver.setTemplate(MyComp, new TemplateAnnotation({
           inline: '<child-cmp #alice></child-cmp>',
           directives: [ChildComp]
         }));
@@ -298,7 +298,7 @@ export function main() {
 
       it('should assign the element instance to a user-defined variable', (done) => {
         tplResolver.setTemplate(MyComp,
-          new Template({inline: '<p><div var-alice><i>Hello</i></div></p>'}));
+          new TemplateAnnotation({inline: '<p><div var-alice><i>Hello</i></div></p>'}));
 
         compiler.compile(MyComp).then((pv) => {
           createView(pv);
@@ -313,7 +313,7 @@ export function main() {
       });
 
       it('should provide binding configuration config to the component', (done) => {
-        tplResolver.setTemplate(MyComp, new Template({
+        tplResolver.setTemplate(MyComp, new TemplateAnnotation({
           inline: '<push-cmp #cmp></push-cmp>',
           directives: [[[PushBasedComp]]]
         }));

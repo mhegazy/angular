@@ -13,7 +13,7 @@ import {createDefaultSteps} from './pipeline/default_steps';
 import {TemplateLoader} from './template_loader';
 import {TemplateResolver} from './template_resolver';
 import {DirectiveMetadata} from './directive_metadata';
-import {Template} from '../annotations/template';
+import {TemplateAnnotation} from '../annotations/template';
 import {ShadowDomStrategy} from './shadow_dom_strategy';
 import {CompileStep} from './pipeline/compile_step';
 import {ComponentUrlMapper} from './component_url_mapper';
@@ -90,7 +90,7 @@ export class Compiler {
     this._appUrl = urlResolver.resolve(null, './');
   }
 
-  createSteps(component:Type, template: Template):List<CompileStep> {
+  createSteps(component:Type, template: TemplateAnnotation):List<CompileStep> {
     // Merge directive metadata (from the template and from the shadow dom strategy)
     var dirMetadata = [];
     var tplMetadata = ListWrapper.map(this._flattenDirectives(template),
@@ -149,7 +149,7 @@ export class Compiler {
   }
 
   // TODO(vicb): union type return ProtoView or Promise<ProtoView>
-  _compileTemplate(template: Template, tplElement: Element, component: Type) {
+  _compileTemplate(template: TemplateAnnotation, tplElement: Element, component: Type) {
     var pipeline = new CompilePipeline(this.createSteps(component, template));
     var compilationCtxtDescription = stringify(this._reader.read(component).type);
     var compileElements;
@@ -207,7 +207,7 @@ export class Compiler {
     }
   }
 
-  _flattenDirectives(template: Template):List<Type> {
+  _flattenDirectives(template: TemplateAnnotation):List<Type> {
     if (isBlank(template.directives)) return [];
 
     var directives = [];

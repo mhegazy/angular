@@ -3,7 +3,8 @@ import {describe, it, expect, beforeEach, ddescribe, iit, xit, el} from 'angular
 import {TemplateLoader} from 'angular2/src/core/compiler/template_loader';
 import {UrlResolver} from 'angular2/src/core/compiler/url_resolver';
 
-import {Template} from 'angular2/src/core/annotations/template';
+import {ComponentAnnotation} from 'angular2/src/core/annotations/annotations';
+import {TemplateAnnotation} from 'angular2/src/core/annotations/template';
 
 import {PromiseWrapper} from 'angular2/src/facade/async';
 
@@ -19,13 +20,13 @@ export function main() {
     });
 
     it('should load inline templates synchronously', () => {
-      var template = new Template({inline: 'inline template'});
+      var template = new TemplateAnnotation({inline: 'inline template'});
       expect(loader.load(template).content).toHaveText('inline template');
     });
 
     it('should load templates through XHR', (done) => {
       xhr.expect('base/foo', 'xhr template');
-      var template = new Template({url: '/foo'});
+      var template = new TemplateAnnotation({url: '/foo'});
       loader.setBaseUrl(template, 'base');
       loader.load(template).then((el) => {
         expect(el.content).toHaveText('xhr template');
@@ -37,7 +38,7 @@ export function main() {
     it('should cache template loaded through XHR', (done) => {
       var firstEl;
       xhr.expect('base/foo', 'xhr template');
-      var template = new Template({url: '/foo'});
+      var template = new TemplateAnnotation({url: '/foo'});
       loader.setBaseUrl(template, 'base');
       loader.load(template)
         .then((el) => {
@@ -53,14 +54,14 @@ export function main() {
     });
 
     it('should throw when no template is defined', () => {
-      var template =  new Template({inline: null, url: null});
+      var template =  new TemplateAnnotation({inline: null, url: null});
       expect(() => loader.load(template))
         .toThrowError('Templates should have either their url or inline property set');
     });
 
     it('should return a rejected Promise when xhr loading fails', (done) => {
       xhr.expect('base/foo', null);
-      var template = new Template({url: '/foo'});
+      var template = new TemplateAnnotation({url: '/foo'});
       loader.setBaseUrl(template, 'base');
       PromiseWrapper.then(loader.load(template),
         function(_) { throw 'Unexpected response'; },

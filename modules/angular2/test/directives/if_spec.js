@@ -14,7 +14,7 @@ import {UrlResolver} from 'angular2/src/core/compiler/url_resolver';
 import {StyleUrlResolver} from 'angular2/src/core/compiler/style_url_resolver';
 
 import {Component} from 'angular2/src/core/annotations/annotations';
-import {Template} from 'angular2/src/core/annotations/template';
+import {TemplateAnnotation} from 'angular2/src/core/annotations/template';
 
 import {MockTemplateResolver} from 'angular2/src/mock/template_resolver_mock';
 
@@ -47,7 +47,7 @@ export function main() {
     }
 
     function compileWithTemplate(html) {
-      var template = new Template({
+      var template = new TemplateAnnotation({
         inline: html,
         directives: [If]
       });
