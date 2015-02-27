@@ -17,8 +17,8 @@ export class ShadowDomStrategy {
   constructLightDom(lightDomView:View, shadowDomView:View, el:Element) {}
   polyfillDirectives():List<Type> { return null; }
   // TODO(vicb): union types: return either a string or a Promise<string>
-  transformStyleText(cssText: string, baseUrl: string, component: Type) {}
-  handleStyleElement(styleEl: StyleElement) {};
+  transformStyleText(cssText: string, baseUrl: string, component: Type): string | Promise<string> { return undefined; }
+  handleStyleElement(styleEl: StyleElement) {}
   shimContentElement(component: Type, element: Element) {}
   shimHostElement(component: Type, element: Element) {}
 }
@@ -71,7 +71,7 @@ export class EmulatedUnscopedShadowDomStrategy extends ShadowDomStrategy {
       MapWrapper.set(_sharedStyleTexts, cssText, true);
       this._insertStyleElement(this._styleHost, styleEl);
     }
-  };
+  }
 
   _insertStyleElement(host: Element, style: StyleElement) {
     if (isBlank(this._lastInsertedStyle)) {
@@ -108,20 +108,20 @@ export class EmulatedScopedShadowDomStrategy extends EmulatedUnscopedShadowDomSt
     this._styleInliner = styleInliner;
   }
 
-  transformStyleText(cssText: string, baseUrl: string, component: Type) {
+  transformStyleText(cssText: string, baseUrl: string, component: Type) : string | Promise<string>{
     cssText = this._styleUrlResolver.resolveUrls(cssText, baseUrl);
     var css = this._styleInliner.inlineImports(cssText, baseUrl);
     if (PromiseWrapper.isPromise(css)) {
-      return css.then((css) => _shimCssForComponent(css, component));
+      return (<Promise<string>>css).then((css) => _shimCssForComponent(css, component));
     } else {
-      return _shimCssForComponent(css, component);
+      return _shimCssForComponent(<string>css, component);
     }
   }
 
   handleStyleElement(styleEl: StyleElement) {
     DOM.remove(styleEl);
     this._insertStyleElement(this._styleHost, styleEl);
-  };
+  }
 
   shimContentElement(component: Type, element: Element) {
     var id = _getComponentId(component);

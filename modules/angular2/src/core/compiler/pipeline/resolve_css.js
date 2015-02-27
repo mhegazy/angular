@@ -28,19 +28,19 @@ export class ResolveCss extends CompileStep {
       current.ignoreBindings = true;
       var styleEl = current.element;
 
-      var css = DOM.getText(styleEl);
-      css = this._strategy.transformStyleText(css, this._templateUrl, this._component);
+      var cssString = DOM.getText(styleEl);
+      var css = this._strategy.transformStyleText(cssString, this._templateUrl, this._component);
       if (PromiseWrapper.isPromise(css)) {
         ListWrapper.push(parent.inheritedProtoView.stylePromises, css);
         DOM.setText(styleEl, '');
-        css.then((css) => {
+        (<Promise<string>>css).then((css) => {
           DOM.setText(styleEl, css);
         })
       } else {
-        DOM.setText(styleEl, css);
+        DOM.setText(styleEl, <string>css);
       }
 
-      this._strategy.handleStyleElement(styleEl);
+      this._strategy.handleStyleElement(<HTMLStyleElement>styleEl);
     }
   }
 }
