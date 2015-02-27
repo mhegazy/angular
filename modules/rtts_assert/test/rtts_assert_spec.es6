@@ -17,7 +17,7 @@ class Type {}
 export function main() {
 
 describe('prettyPrint', () => {
-  class Type {};
+  //class Type {};
 
   it('should limit the number of printed properties', () => {
     var o = {};
