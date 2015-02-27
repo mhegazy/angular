@@ -74,7 +74,7 @@ function assertArgumentTypes(...params) {
   }
 }
 
-function prettyPrint(value, depth) {
+function prettyPrint(value, depth?: number) {
   if (typeof(depth) === 'undefined') {
     depth = 0;
   }
