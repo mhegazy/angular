@@ -60,7 +60,7 @@ class MockMetric extends Metric {
     this._id = id;
   }
 
-  beginMeasure():Promise {
+  beginMeasure():Promise<any> {
     return PromiseWrapper.resolve(`${this._id}_beginMeasure`);
   }
 

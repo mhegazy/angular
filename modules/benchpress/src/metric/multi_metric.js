@@ -18,7 +18,7 @@ export class MultiMetric extends Metric {
     ];
   }
 
-  _metrics:List;
+  _metrics:List<any>;
 
   constructor(metrics) {
     super();
@@ -28,7 +28,7 @@ export class MultiMetric extends Metric {
   /**
    * Starts measuring
    */
-  beginMeasure():Promise {
+  beginMeasure():Promise<any> {
     return PromiseWrapper.all(ListWrapper.map(
       this._metrics, (metric) => metric.beginMeasure()
     ));

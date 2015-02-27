@@ -245,10 +245,10 @@ function addSimpleChangeRecordTemplate(protoIndex:number, oldValue:string, newVa
 export class ChangeDetectorJITGenerator {
   typeName:string;
   records:List<ProtoRecord>;
-  localNames:List<String>;
-  changeNames:List<String>;
-  fieldNames:List<String>;
-  pipeNames:List<String>;
+  localNames:List<string>;
+  changeNames: List<string>;
+  fieldNames: List<string>;
+  pipeNames: List<string>;
 
   constructor(typeName:string, records:List<ProtoRecord>) {
     this.typeName = typeName;
@@ -277,7 +277,7 @@ export class ChangeDetectorJITGenerator {
     return localNames.map((n) => `this.${n}`);
   }
 
-  getPipeNames(localNames:List<String>):List<String> {
+  getPipeNames(localNames: List<string>): List<string> {
     return localNames.map((n) => `this.${n}_pipe`);
   }
 

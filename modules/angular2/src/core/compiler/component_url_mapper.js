@@ -12,7 +12,7 @@ export class ComponentUrlMapper {
 }
 
 export class RuntimeComponentUrlMapper extends ComponentUrlMapper {
-  _componentUrls: Map;
+  _componentUrls: Map<any, any>;
 
   constructor() {
     super();

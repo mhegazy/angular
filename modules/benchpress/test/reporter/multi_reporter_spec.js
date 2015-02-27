@@ -60,14 +60,14 @@ class MockReporter extends Reporter {
     this._id = id;
   }
 
-  reportMeasureValues(values:MeasureValues):Promise {
+  reportMeasureValues(values:MeasureValues):Promise<any> {
     return PromiseWrapper.resolve({
       'id': this._id,
       'values': values
     });
   }
 
-  reportSample(completeSample:List<MeasureValues>, validSample:List<MeasureValues>):Promise {
+  reportSample(completeSample:List<MeasureValues>, validSample:List<MeasureValues>):Promise<any> {
     return PromiseWrapper.resolve({
       'id': this._id,
       'completeSample': completeSample,

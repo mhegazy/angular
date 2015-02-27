@@ -103,7 +103,7 @@ export function main() {
 }
 
 class MockWebDriverAdapter extends WebDriverAdapter {
-  executeScript(script):Promise {
+  executeScript(script):Promise<any> {
     return PromiseWrapper.resolve('someUserAgent');
   }
 }

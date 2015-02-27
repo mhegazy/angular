@@ -185,7 +185,7 @@ export class ListWrapper {
   static slice(l:List<any>, from:int, to:int):List<any> {
     return l.slice(from, to);
   }
-  static sort(l:List, compareFn:Function) {
+  static sort(l:List<any>, compareFn:Function) {
     l.sort(compareFn);
   }
 }

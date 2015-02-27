@@ -19,20 +19,20 @@ export class MultiReporter extends Reporter {
     ];
   }
 
-  _reporters:List;
+  _reporters:List<any>;
 
   constructor(reporters) {
     super();
     this._reporters = reporters;
   }
 
-  reportMeasureValues(values:MeasureValues):Promise {
+  reportMeasureValues(values:MeasureValues):Promise<any> {
     return PromiseWrapper.all(ListWrapper.map(
       this._reporters, (reporter) => reporter.reportMeasureValues(values)
     ));
   }
 
-  reportSample(completeSample:List<MeasureValues>, validSample:List<MeasureValues>):Promise {
+  reportSample(completeSample:List<MeasureValues>, validSample:List<MeasureValues>):Promise<any> {
     return PromiseWrapper.all(ListWrapper.map(
       this._reporters, (reporter) => reporter.reportSample(completeSample, validSample)
     ));

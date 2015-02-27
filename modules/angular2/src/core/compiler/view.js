@@ -275,7 +275,7 @@ export class ProtoView {
   isTemplateElement:boolean;
   shadowDomStrategy: ShadowDomStrategy;
   _viewPool: ViewPool;
-  stylePromises: List<Promise>;
+  stylePromises: List<Promise<any>>;
 
   constructor(
       template:Element,

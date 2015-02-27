@@ -14,8 +14,8 @@ export class ProtoRecord {
   mode:number;
   name:string;
   funcOrValue:any;
-  args:List;
-  fixedArgs:List;
+  args:List<any>;
+  fixedArgs:List<any>;
   contextIndex:number;
   selfIndex:number;
   bindingMemento:any;
@@ -27,8 +27,8 @@ export class ProtoRecord {
   constructor(mode:number,
               name:string,
               funcOrValue,
-              args:List,
-              fixedArgs:List,
+              args:List<any>,
+              fixedArgs:List<any>,
               contextIndex:number,
               selfIndex:number,
               bindingMemento:any,

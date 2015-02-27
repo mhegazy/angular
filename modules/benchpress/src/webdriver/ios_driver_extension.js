@@ -24,11 +24,11 @@ export class IOsDriverExtension extends WebDriverExtension {
     return this._driver.executeScript('window.gc()');
   }
 
-  timeBegin(name:string):Promise {
+  timeBegin(name:string):Promise<any> {
     return this._driver.executeScript(`console.time('${name}');`);
   }
 
-  timeEnd(name:string, restartName:string = null):Promise {
+  timeEnd(name:string, restartName:string = null):Promise<any> {
     var script = `console.timeEnd('${name}');`;
     if (isPresent(restartName)) {
       script += `console.time('${restartName}');`

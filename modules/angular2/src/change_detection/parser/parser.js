@@ -50,7 +50,7 @@ export class Parser {
     return new ASTWithSource(ast, input, location);
   }
 
-  addPipes(bindingAst:ASTWithSource, pipes:List<String>):ASTWithSource {
+  addPipes(bindingAst: ASTWithSource, pipes: List<string>):ASTWithSource {
     if (ListWrapper.isEmpty(pipes)) return bindingAst;
 
     var res = ListWrapper.reduce(pipes,
