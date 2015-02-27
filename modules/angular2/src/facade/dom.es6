@@ -8,6 +8,7 @@ export var Text = window.Text;
 export var Element = window.HTMLElement;
 export interface Element extends HTMLElement { }
 export var AnchorElement = window.HTMLAnchorElement;
+export interface AnchorElement extends HTMLAnchorElement { }
 export var TemplateElement = window.HTMLTemplateElement;
 export var StyleElement = window.HTMLStyleElement;
 export var ShadowRoot = window.ShadowRoot;
@@ -15,8 +16,7 @@ export var document = window.document;
 export var location = window.location;
 export var gc = window.gc ? () => window.gc() : () => null;
 export var CssRule = window.CSSRule;
-export var CssKeyframesRule = window.CSSKeyframesRule;
-
+export var CSSKeyframesRule = window.CSSKeyframesRule;
 
 
 export class DOM {
@@ -116,16 +116,16 @@ export class DOM {
   static setText(el, value:string) {
     el.textContent = value;
   }
-  static getValue(el: Element) {
+  static getValue(el: HTMLInputElement) {
     return el.value;
   }
-  static setValue(el: Element, value:string) {
+  static setValue(el: HTMLInputElement, value:string) {
     el.value = value;
   }
-  static getChecked(el: Element) {
+  static getChecked(el: HTMLInputElement) {
     return el.checked;
   }
-  static setChecked(el: Element, value:boolean) {
+  static setChecked(el: HTMLInputElement, value:boolean) {
     el.checked = value;
   }
   static createTemplate(html): HTMLTemplateElement{
@@ -222,7 +222,7 @@ export class DOM {
     return n instanceof <any>Element && n.matches(selector);
   }
   static isTemplateElement(el:any):boolean {
-    return el instanceof TemplateElement;
+    return el instanceof (<any>TemplateElement);
   }
   static isTextNode(node:Node):boolean {
     return node.nodeType === Node.TEXT_NODE;

@@ -2,7 +2,7 @@ import {
   StyleElement,
   DOM,
   CssRule,
-  CssKeyframesRule,
+  CSSKeyframesRule,
   CSSRuleWrapper
 } from 'angular2/src/facade/dom';
 import {List, ListWrapper} from 'angular2/src/facade/collection';
@@ -382,10 +382,10 @@ export class ShadowCss {
     return cssText;
   }
 
-  _ieSafeCssTextFromKeyFrameRule(rule: CssKeyframesRule): string {
+  _ieSafeCssTextFromKeyFrameRule(rule: CSSKeyframesRule): string {
     var cssText = '@keyframes ' + rule.name + ' {';
     for (var i = 0; i < rule.cssRules.length; i++) {
-      var r = rule.cssRules[i];
+      var r = <CSSKeyframeRule>rule.cssRules[i];
       cssText += ' ' + r.keyText + ' {' + r.style.cssText + '}';
     }
     cssText += ' }';
