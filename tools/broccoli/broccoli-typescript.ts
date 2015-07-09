@@ -38,6 +38,9 @@ class DiffingTSCompiler implements DiffingBroccoliPlugin {
 
   constructor(public inputPath: string, public cachePath: string, public options) {
     this.tsOpts = Object.create(options);
+
+    this.tsOpts.noEmitOnError = false;
+
     this.tsOpts.outDir = this.cachePath;
     this.tsOpts.target = (<any>ts).ScriptTarget[options.target];
     this.rootFilePaths = options.rootFilePaths ? options.rootFilePaths.splice(0) : [];
@@ -51,16 +54,16 @@ class DiffingTSCompiler implements DiffingBroccoliPlugin {
     let pathsToEmit = [];
 
     treeDiff.addedPaths.concat(treeDiff.changedPaths)
-        .forEach((tsFilePath) => {
-          if (!this.fileRegistry[tsFilePath]) {
-            this.fileRegistry[tsFilePath] = {version: 0};
-            this.rootFilePaths.push(tsFilePath);
-          } else {
-            this.fileRegistry[tsFilePath].version++;
-          }
+      .forEach((tsFilePath) => {
+        if (!this.fileRegistry[tsFilePath]) {
+          this.fileRegistry[tsFilePath] = { version: 0 };
+          this.rootFilePaths.push(tsFilePath);
+        } else {
+          this.fileRegistry[tsFilePath].version++;
+        }
 
-          pathsToEmit.push(tsFilePath);
-        });
+        pathsToEmit.push(tsFilePath);
+      });
 
     treeDiff.removedPaths.forEach((tsFilePath) => {
       console.log('removing outputs for', tsFilePath);
@@ -74,25 +77,21 @@ class DiffingTSCompiler implements DiffingBroccoliPlugin {
       this.firstRun = false;
       this.doFullBuild();
     } else {
-        pathsToEmit.forEach((tsFilePath) => {
+      pathsToEmit.forEach((tsFilePath) => {
         let output = this.tsService.getEmitOutput(tsFilePath);
 
-        // Assuming noEmitOnError is always set, emit will be skipped
-        // if any file has errors
-        if (output.emitSkipped) {
-          this.reportErrors(ts.getPreEmitDiagnostics(this.tsService.getProgram()));
-        } else {
-          output.outputFiles.forEach(o => {
-            let destDirPath = path.dirname(o.name);
-            fse.mkdirsSync(destDirPath);
-            fs.writeFileSync(o.name, o.text, FS_OPTS);
-          });
-        }
+        this.throwIfHasErrors(ts.getPreEmitDiagnostics(this.tsService.getProgram()));
+
+        output.outputFiles.forEach(o => {
+          let destDirPath = path.dirname(o.name);
+          fse.mkdirsSync(destDirPath);
+          fs.writeFileSync(o.name, o.text, FS_OPTS);
+        });
       });
     }
   }
 
-  private reportErrors(diagnostics: ts.Diagnostic[]) {
+  private throwIfHasErrors(diagnostics: ts.Diagnostic[]) {
     // Get the text
     let errorMessages = diagnostics.map(diagnostic => {
       let location = '';
@@ -115,18 +114,14 @@ class DiffingTSCompiler implements DiffingBroccoliPlugin {
 
   private doFullBuild() {
     let program = this.tsService.getProgram();
-    let emitResult = program.emit(undefined, function(absoluteFilePath, fileContent) {
+    let emitResult = program.emit(undefined, function (absoluteFilePath, fileContent) {
       fse.mkdirsSync(path.dirname(absoluteFilePath));
       fs.writeFileSync(absoluteFilePath, fileContent, FS_OPTS);
     });
 
-    // Assuming noEmitOnError is always set, emit will be skipped if there is at least 
-    // one error
-    if (emitResult.emitSkipped) {
-      let allDiagnostics =
-        ts.getPreEmitDiagnostics(this.tsService.getProgram()).concat(emitResult.diagnostics);
-      this.reportErrors(allDiagnostics);
-    }
+    let allDiagnostics =
+      ts.getPreEmitDiagnostics(this.tsService.getProgram()).concat(emitResult.diagnostics);
+    this.throwIfHasErrors(allDiagnostics);
   }
 
   private removeOutputFor(tsFilePath: string) {
