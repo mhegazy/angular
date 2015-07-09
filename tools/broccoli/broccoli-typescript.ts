@@ -32,7 +32,6 @@ class DiffingTSCompiler implements DiffingBroccoliPlugin {
   private tsServiceHost: ts.LanguageServiceHost;
   private tsService: ts.LanguageService;
   private firstRun: boolean = true;
-  private previousRunFailed: boolean = false;
 
   static includeExtensions = ['.ts'];
   static excludeExtensions = ['.d.ts'];
@@ -50,8 +49,6 @@ class DiffingTSCompiler implements DiffingBroccoliPlugin {
 
   rebuild(treeDiff: DiffResult) {
     let pathsToEmit = [];
-    let pathsWithErrors = [];
-    let errorMessages = [];
 
     treeDiff.addedPaths.concat(treeDiff.changedPaths)
         .forEach((tsFilePath) => {
@@ -77,15 +74,13 @@ class DiffingTSCompiler implements DiffingBroccoliPlugin {
       this.firstRun = false;
       this.doFullBuild();
     } else {
-      pathsToEmit.forEach((tsFilePath) => {
+        pathsToEmit.forEach((tsFilePath) => {
         let output = this.tsService.getEmitOutput(tsFilePath);
 
+        // Assuming noEmitOnError is always set, emit will be skipped
+        // if any file has errors
         if (output.emitSkipped) {
-          let errorFound = this.collectErrors(tsFilePath);
-          if (errorFound) {
-            pathsWithErrors.push(tsFilePath);
-            errorMessages.push(errorFound);
-          }
+          this.reportErrors(ts.getPreEmitDiagnostics(this.tsService.getProgram()));
         } else {
           output.outputFiles.forEach(o => {
             let destDirPath = path.dirname(o.name);
@@ -94,41 +89,29 @@ class DiffingTSCompiler implements DiffingBroccoliPlugin {
           });
         }
       });
-
-      if (pathsWithErrors.length) {
-        this.previousRunFailed = true;
-        var error =
-            new Error('Typescript found the following errors:\n' + errorMessages.join('\n'));
-        error['showStack'] = false;
-        throw error;
-      } else if (this.previousRunFailed) {
-        this.doFullBuild();
-      }
     }
   }
 
-
-  private collectErrors(tsFilePath): String {
-    let allDiagnostics = this.tsService.getCompilerOptionsDiagnostics()
-                             .concat(this.tsService.getSyntacticDiagnostics(tsFilePath))
-                             .concat(this.tsService.getSemanticDiagnostics(tsFilePath));
-    let errors = [];
-
-    allDiagnostics.forEach(diagnostic => {
-      let message = ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n");
+  private reportErrors(diagnostics: ts.Diagnostic[]) {
+    // Get the text
+    let errorMessages = diagnostics.map(diagnostic => {
+      let location = '';
       if (diagnostic.file) {
-        let{line, character} = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
-        errors.push(`  ${diagnostic.file.fileName} (${line + 1},${character + 1}): ${message}`);
-      } else {
-        errors.push(`  Error: ${message}`);
+        var {line, character} = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
+        location = `${diagnostic.file.fileName} (${line + 1}, ${character + 1}): `
       }
+      var message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+      return `  ${location}${message}`;
     });
 
-    if (errors.length) {
-      return errors.join('\n');
+    // Raise the exception
+    if (errorMessages.length) {
+      var error =
+        new Error('Typescript found the following errors:\n' + errorMessages.join('\n'));
+      error['showStack'] = false;
+      throw error;
     }
   }
-
 
   private doFullBuild() {
     let program = this.tsService.getProgram();
@@ -137,32 +120,14 @@ class DiffingTSCompiler implements DiffingBroccoliPlugin {
       fs.writeFileSync(absoluteFilePath, fileContent, FS_OPTS);
     });
 
+    // Assuming noEmitOnError is always set, emit will be skipped if there is at least 
+    // one error
     if (emitResult.emitSkipped) {
-      let allDiagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
-      let errorMessages = [];
-
-      allDiagnostics.forEach(diagnostic => {
-        var pos = '';
-        if (diagnostic.file) {
-          var {line, character} = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
-          pos = `${diagnostic.file.fileName} (${line + 1}, ${character + 1}): `
-        }
-        var message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
-        errorMessages.push(`  ${pos}${message}`);
-      });
-
-      if (errorMessages.length) {
-        this.previousRunFailed = true;
-        var error =
-            new Error('Typescript found the following errors:\n' + errorMessages.join('\n'));
-        error['showStack'] = false;
-        throw error;
-      } else {
-        this.previousRunFailed = false;
-      }
+      let allDiagnostics =
+        ts.getPreEmitDiagnostics(this.tsService.getProgram()).concat(emitResult.diagnostics);
+      this.reportErrors(allDiagnostics);
     }
   }
-
 
   private removeOutputFor(tsFilePath: string) {
     let absoluteJsFilePath = path.join(this.cachePath, tsFilePath.replace(/\.ts$/, '.js'));
